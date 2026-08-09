@@ -44,6 +44,9 @@ https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-
 - The Legacy campaign page's back link returns to `/new-game`.
 - Global LESS requires `npm run make:css` in addition to the client JavaScript
   build.
+- Replaced the temporary Cloudflare Quick Tunnel with the remotely managed
+  `terraforming-mars-legacy` tunnel at `https://mars.chrypnotoad.com`,
+  without changing the application service or application code.
 
 ## Verification status
 
@@ -58,6 +61,9 @@ The following checks passed for the current changes:
 - `npm run lint:server`.
 - `npm run lint:client`.
 - `npm run lint:css`.
+- Named-tunnel validation (2026-08-09): Cloudflare reports the tunnel healthy;
+  public DNS resolves; HTTPS `/` and `/new-game` return HTTP 200; and the
+  public and local `/new-game` documents match byte-for-byte.
 
 A visual browser click-through was not completed because the in-app preview
 browser was unavailable. The public root returned HTTP 200, and its served
@@ -66,15 +72,19 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
 ## Runtime and hosting notes
 
 - Historical local URL: `http://localhost:8080/legacy`.
-- Current temporary public URL (verified 2026-08-09):
-  `https://preferences-kept-integral-priced.trycloudflare.com/legacy`.
-- The public URL is a Cloudflare Quick Tunnel and may no longer work or may
-  change after a restart. Verify it before sharing it.
-- The Mac mini is the intended always-on host. A named Cloudflare Tunnel and a
-  stable domain remain a later hosting task.
+- Stable public URL (verified 2026-08-09):
+  `https://mars.chrypnotoad.com/new-game`.
+- The Mac mini is the intended always-on host. The remotely managed Cloudflare
+  Tunnel `terraforming-mars-legacy` routes `mars.chrypnotoad.com` to
+  `http://127.0.0.1:8080` through a proxied CNAME.
+- The existing
+  `com.chrypnotoad.terraforming-mars-legacy-tunnel` user LaunchAgent now runs
+  the named tunnel using an owner-only token and wrapper outside the repository.
+  Its prior Quick Tunnel plist is preserved at
+  `/Users/chris/Library/Application Support/Terraforming Mars Legacy/rollback/com.chrypnotoad.terraforming-mars-legacy-tunnel.quick-tunnel.plist`.
 - The production Node server caches compressed frontend bundles in memory.
   After rebuilding the client, restart the app LaunchAgent before public QA.
-  Restarting only the app preserves the current Quick Tunnel URL.
+  Restarting only the app preserves the stable tunnel hostname.
 
 ## Current blockers
 

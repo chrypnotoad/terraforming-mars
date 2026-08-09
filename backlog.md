@@ -35,8 +35,8 @@ update the status as work moves between devices or Codex tasks.
 
 - [ ] Add missions 2–4 one at a time as official data becomes available.
 - [ ] Add missions 5–7 only when official material is available.
-- [ ] Replace the temporary Cloudflare Quick Tunnel with a named tunnel and
-  stable domain.
+- [x] Replace the temporary Cloudflare Quick Tunnel with a named tunnel and
+  stable domain (`https://mars.chrypnotoad.com`, 2026-08-09).
 - [ ] Add a backup and restore procedure for the campaign SQLite database.
 - [ ] Reassess whether a hosted container or Sites/D1 port is worthwhile after
   the local campaign mode is stable.
