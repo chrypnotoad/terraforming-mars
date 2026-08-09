@@ -37,7 +37,7 @@ https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-
   `docs/legacy-of-mars-assessment.md`.
 - Added the May 2027 estimated fulfillment date to the Legacy UI, linked the
   Gamefound campaign, and scheduled a March 2027 source review in `backlog.md`.
-- Restyled the root-page Legacy tile so `Estimated delivery: May 2027` appears
+- Restyled the root-page Legacy tile so `Coming soon ~May 2027` appears
   as a subtitle beneath its title. Global LESS requires `npm run make:css` in
   addition to the client JavaScript build.
 

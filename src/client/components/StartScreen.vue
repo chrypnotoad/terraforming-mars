@@ -8,7 +8,7 @@
     <a class="start-screen-link start-screen-link--new-game" href="new-game" v-i18n>New game</a>
     <a class="start-screen-link start-screen-link--legacy" href="legacy">
       <span>Legacy campaigns</span>
-      <span class="start-screen-link-note">Estimated delivery: {{ legacyExpectedDelivery }}</span>
+      <span class="start-screen-link-note">Coming soon ~{{ legacyExpectedDelivery }}</span>
     </a>
     <a class="start-screen-link start-screen-link--how-to-play" href="https://github.com/terraforming-mars/terraforming-mars/wiki/Rulebooks" target="_blank" v-i18n>How to Play</a>
     <a class="start-screen-link start-screen-link--cards-list" href="cards" target="_blank" v-i18n>Cards list</a>
