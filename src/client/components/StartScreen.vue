@@ -6,7 +6,10 @@
       <div class="start-screen-title-bottom">MARS</div>
     </div>
     <a class="start-screen-link start-screen-link--new-game" href="new-game" v-i18n>New game</a>
-    <a class="start-screen-link start-screen-link--legacy" href="legacy">Legacy campaigns</a>
+    <a class="start-screen-link start-screen-link--legacy" href="legacy">
+      <span>Legacy campaigns</span>
+      <span class="start-screen-link-note">Official game estimated {{ legacyExpectedDelivery }}</span>
+    </a>
     <a class="start-screen-link start-screen-link--how-to-play" href="https://github.com/terraforming-mars/terraforming-mars/wiki/Rulebooks" target="_blank" v-i18n>How to Play</a>
     <a class="start-screen-link start-screen-link--cards-list" href="cards" target="_blank" v-i18n>Cards list</a>
     <a class="start-screen-link start-screen-link--board-game" href="https://boardgamegeek.com/boardgame/167791/terraforming-mars" target="_blank" v-i18n>Board game</a>
@@ -43,6 +46,7 @@ import PreferencesIcon from '@/client/components/PreferencesIcon.vue';
 
 import raw_settings from '@/genfiles/settings.json';
 import * as constants from '@/common/constants';
+import {LEGACY_EXPECTED_DELIVERY} from '@/common/legacy/LegacyCampaign';
 
 export default defineComponent({
   name: 'StartScreen',
@@ -50,6 +54,11 @@ export default defineComponent({
     LanguageSwitcher,
     LanguageIcon,
     PreferencesIcon,
+  },
+  data() {
+    return {
+      legacyExpectedDelivery: LEGACY_EXPECTED_DELIVERY,
+    };
   },
   computed: {
     raw_settings(): typeof raw_settings {

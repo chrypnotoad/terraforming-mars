@@ -9,6 +9,14 @@
       </div>
     </header>
 
+    <section class="release-notice" aria-label="Legacy of Mars release information">
+      <div>
+        <strong>Official game estimated {{ expectedDelivery }}</strong>
+        <span>Mission implementation will resume when rules-accurate official material is available.</span>
+      </div>
+      <a :href="gamefoundUrl" target="_blank" rel="noopener noreferrer">Follow the project on Gamefound ↗</a>
+    </section>
+
     <div v-if="loading" class="panel message">Loading campaigns…</div>
     <div v-else-if="error" class="panel message error-message">
       <p>{{ error }}</p>
@@ -57,7 +65,7 @@
           <p class="eyebrow">Next up</p>
           <h3>Mission {{ selectedCampaign.currentMission }}</h3>
           <p>The campaign and roster are ready. Mission gameplay stays locked until the official board, briefing, cards, milestones, and awards are available.</p>
-          <button type="button" class="primary-button" disabled>Mission content not yet available</button>
+          <button type="button" class="primary-button" disabled>Official game estimated {{ expectedDelivery }}</button>
         </section>
       </div>
 
@@ -146,7 +154,14 @@
 <script lang="ts">
 import {defineComponent} from 'vue';
 import {paths} from '@/common/app/paths';
-import {LEGACY_CAMPAIGN_MISSION_COUNT, LegacyCampaign, LegacyCampaignId, LegacyCampaignSummary} from '@/common/legacy/LegacyCampaign';
+import {
+  LEGACY_CAMPAIGN_MISSION_COUNT,
+  LEGACY_EXPECTED_DELIVERY,
+  LEGACY_GAMEFOUND_URL,
+  LegacyCampaign,
+  LegacyCampaignId,
+  LegacyCampaignSummary,
+} from '@/common/legacy/LegacyCampaign';
 
 type CampaignListResponse = {campaigns: Array<LegacyCampaignSummary>};
 
@@ -164,6 +179,8 @@ export default defineComponent({
       newCampaignName: '',
       newPlayerNames: ['', ''],
       missionCount: LEGACY_CAMPAIGN_MISSION_COUNT,
+      expectedDelivery: LEGACY_EXPECTED_DELIVERY,
+      gamefoundUrl: LEGACY_GAMEFOUND_URL,
     };
   },
   methods: {
@@ -307,7 +324,36 @@ export default defineComponent({
 
 .legacy-header {
   align-items: flex-start;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
+}
+
+.release-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(228, 182, 109, 0.38);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: rgba(84, 53, 27, 0.38);
+}
+
+.release-notice strong,
+.release-notice span {
+  display: block;
+}
+
+.release-notice span {
+  margin-top: 4px;
+  color: #bdc5cd;
+  line-height: 1.45;
+}
+
+.release-notice a {
+  flex: 0 0 auto;
+  color: #e4b66d;
+  font-weight: 700;
 }
 
 h1,
@@ -635,6 +681,7 @@ h3 {
   }
 
   .legacy-header,
+  .release-notice,
   .campaign-toolbar,
   .detail-heading,
   .roster-heading {
@@ -644,6 +691,10 @@ h3 {
 
   .legacy-header {
     gap: 25px;
+  }
+
+  .release-notice {
+    align-items: flex-start;
   }
 
   .detail-grid {

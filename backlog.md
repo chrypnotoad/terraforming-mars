@@ -27,6 +27,12 @@ update the status as work moves between devices or Codex tasks.
 
 ## Later
 
+- [ ] **2027-03-01:** Recheck the Gamefound campaign and publisher updates for
+  delivery timing, official rules, and usable Mission 1 material. The current
+  estimated fulfillment date is May 2027 and may change.
+- [ ] After fulfillment begins, inventory the official Mission 1 components
+  and update `docs/legacy-of-mars-assessment.md` before resuming implementation.
+
 - [ ] Add missions 2–4 one at a time as official data becomes available.
 - [ ] Add missions 5–7 only when official material is available.
 - [ ] Replace the temporary Cloudflare Quick Tunnel with a named tunnel and

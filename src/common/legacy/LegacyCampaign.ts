@@ -6,6 +6,8 @@ export type LegacyCampaignStatus = 'planning' | 'active' | 'completed';
 
 export const LEGACY_CAMPAIGN_SCHEMA_VERSION = 1;
 export const LEGACY_CAMPAIGN_MISSION_COUNT = 7;
+export const LEGACY_GAMEFOUND_URL = 'https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-of--mars';
+export const LEGACY_EXPECTED_DELIVERY = 'May 2027';
 
 export interface LegacyCampaignPlayer {
   id: LegacyCampaignPlayerId;

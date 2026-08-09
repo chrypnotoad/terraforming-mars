@@ -23,7 +23,8 @@ progress dashboard at `/legacy`.
 Mission launching is intentionally disabled. The official Mission 1 board,
 briefing, cards, corporations, developments, milestones, awards, and complete
 rules data are still required before claiming a playable, rules-accurate
-mission.
+mission. Gamefound currently lists estimated fulfillment as May 2027:
+https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-of--mars
 
 ## Last completed work
 
@@ -34,6 +35,8 @@ mission.
 - Added database, route, and client component regression tests.
 - Added the implementation assessment at
   `docs/legacy-of-mars-assessment.md`.
+- Added the May 2027 estimated fulfillment date to the Legacy UI, linked the
+  Gamefound campaign, and scheduled a March 2027 source review in `backlog.md`.
 
 ## Verification status
 
@@ -48,7 +51,9 @@ The following checks passed for the current changes:
 - `npm run lint:css`.
 
 A visual browser click-through was not completed because the in-app preview
-browser was unavailable.
+browser was unavailable. For the release-timing UI update, both affected
+component tests passed, the production client and server builds passed, and
+server, client, and CSS lint passed.
 
 ## Runtime and hosting notes
 
@@ -69,7 +74,8 @@ browser was unavailable.
 
 ## Next recommended action
 
-1. Obtain official Mission 1 material, then implement a vertical slice behind
+1. Recheck the Gamefound campaign and publisher updates on 2027-03-01.
+2. Obtain official Mission 1 material, then implement a vertical slice behind
    the Legacy mode flag.
 
 ## Source of truth

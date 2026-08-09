@@ -1,6 +1,7 @@
 import {flushPromises, shallowMount} from '@vue/test-utils';
 import {expect} from 'chai';
 import LegacyCampaignHome from '@/client/components/legacy/LegacyCampaignHome.vue';
+import {LEGACY_EXPECTED_DELIVERY, LEGACY_GAMEFOUND_URL} from '@/common/legacy/LegacyCampaign';
 import {globalConfig} from '../getLocalVue';
 
 describe('LegacyCampaignHome', () => {
@@ -33,5 +34,7 @@ describe('LegacyCampaignHome', () => {
     expect(wrapper.text()).contains('Choose a campaign');
     expect(wrapper.text()).contains('Friday Night Mars');
     expect(wrapper.text()).contains('Chris · Taylor');
+    expect(wrapper.text()).contains(LEGACY_EXPECTED_DELIVERY);
+    expect(wrapper.get('.release-notice a').attributes('href')).eq(LEGACY_GAMEFOUND_URL);
   });
 });
