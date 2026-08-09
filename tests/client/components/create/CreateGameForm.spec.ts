@@ -8,6 +8,7 @@ import {BoardName} from '@/common/boards/BoardName';
 import {DEFAULT_EXPANSIONS} from '@/common/cards/GameModule';
 import {JSONObject} from '@/common/Types';
 import {defineComponent} from 'vue';
+import {LEGACY_EXPECTED_DELIVERY} from '@/common/legacy/LegacyCampaign';
 
 // Minimal serialized Create Game payload used by settings restore tests.
 function createGameSettings(overrides: JSONObject = {}): JSONObject {
@@ -41,6 +42,9 @@ describe('CreateGameForm', () => {
       ...globalConfig,
     });
     expect(wrapper.exists()).to.be.true;
+    expect(wrapper.get('.game-type-card--selected').text()).contains('Standard game');
+    expect(wrapper.get('.game-type-card--legacy').attributes('href')).eq('/legacy');
+    expect(wrapper.get('.game-type-card--legacy').text()).contains(LEGACY_EXPECTED_DELIVERY);
   });
 
   it('restores the last saved game settings on load', async () => {

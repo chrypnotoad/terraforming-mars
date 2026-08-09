@@ -6,6 +6,26 @@
               (<span v-i18n>Looking for people to play with</span>? <a :href="constants.DISCORD_INVITE" class="tooltip" v-i18n data-tooltip="Link opens in a new tab/window" target="_blank"><u v-i18n>Join us on Discord</u></a>.)
             </div>
 
+            <section class="game-type-picker create-game--block" aria-labelledby="game-type-heading">
+              <h2 id="game-type-heading">Game type</h2>
+              <div class="game-type-options">
+                <div class="game-type-card game-type-card--selected" aria-current="true">
+                  <div class="game-type-card-heading">
+                    <strong>Standard game</strong>
+                    <span class="game-type-status">Selected</span>
+                  </div>
+                  <p>Configure a single game using the options below.</p>
+                </div>
+                <a class="game-type-card game-type-card--legacy" href="/legacy">
+                  <div class="game-type-card-heading">
+                    <strong>Legacy campaign</strong>
+                    <span class="game-type-release">Coming soon ~{{ legacyExpectedDelivery }}</span>
+                  </div>
+                  <p>Open the campaign manager for persistent players and seven linked missions.</p>
+                </a>
+              </div>
+            </section>
+
             <div class="create-game-form create-game-panel create-game--block">
 
                 <div class="create-game-options">
@@ -599,6 +619,7 @@ import {CreateGameSettingsStorage} from './CreateGameSettingsStorage';
 import {getColony} from '@/client/colonies/ClientColonyManifest';
 import {RULEBOOK_URLS, WIKI, WIKI_URLS} from '@/client/utils/WikiLinks';
 import {setDocumentTitle} from '@/client/utils/documentTitle';
+import {LEGACY_EXPECTED_DELIVERY} from '@/common/legacy/LegacyCampaign';
 
 const REVISED_COUNT_ALGORITHM = false;
 const createGameSettingsStorage = new CreateGameSettingsStorage();
@@ -613,6 +634,7 @@ type Refs = {
 type FormModel = {
   preludeToggled: boolean;
   uploading: boolean;
+  legacyExpectedDelivery: string;
 };
 
 export default defineComponent({
@@ -622,6 +644,7 @@ export default defineComponent({
       ...defaultCreateGameModel(),
       preludeToggled: false,
       uploading: false,
+      legacyExpectedDelivery: LEGACY_EXPECTED_DELIVERY,
     };
   },
   components: {

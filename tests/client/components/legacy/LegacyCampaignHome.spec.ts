@@ -35,6 +35,7 @@ describe('LegacyCampaignHome', () => {
     expect(wrapper.text()).contains('Friday Night Mars');
     expect(wrapper.text()).contains('Chris · Taylor');
     expect(wrapper.text()).contains(LEGACY_EXPECTED_DELIVERY);
+    expect(wrapper.get('.back-link').attributes('href')).eq('/new-game');
     expect(wrapper.get('.release-subtitle a').attributes('href')).eq(LEGACY_GAMEFOUND_URL);
   });
 });

@@ -37,9 +37,13 @@ https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-
   `docs/legacy-of-mars-assessment.md`.
 - Added the May 2027 estimated fulfillment date to the Legacy UI, linked the
   Gamefound campaign, and scheduled a March 2027 source review in `backlog.md`.
-- Restyled the root-page Legacy tile so `Coming soon ~May 2027` appears
-  as a subtitle beneath its title. Global LESS requires `npm run make:css` in
-  addition to the client JavaScript build.
+- Moved the Legacy entry under New Game so the root page retains its original
+  celestial artwork sequence. The root New Game tile now says `Standard &
+  Legacy`; `/new-game` presents Standard and Legacy game-type cards, with the
+  latter linking to the campaign manager and showing `Coming soon ~May 2027`.
+- The Legacy campaign page's back link returns to `/new-game`.
+- Global LESS requires `npm run make:css` in addition to the client JavaScript
+  build.
 
 ## Verification status
 
@@ -47,6 +51,7 @@ The following checks passed for the current changes:
 
 - Focused database/API tests: 6 passing.
 - Legacy campaign component test: 1 passing.
+- Start Screen and Create Game component tests: 7 passing together.
 - `npm run build:server`.
 - `npm run build:client` (Webpack emitted only existing asset-size warnings).
 - `npm run make:css`.

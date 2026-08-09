@@ -1,7 +1,7 @@
 <template>
   <main class="legacy-home">
     <header class="legacy-header">
-      <a class="back-link" href="/">← Main menu</a>
+      <a class="back-link" href="/new-game">← New game</a>
       <div>
         <p class="eyebrow">Terraforming Mars</p>
         <h1>Legacy campaigns</h1>

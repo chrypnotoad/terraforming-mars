@@ -14,6 +14,81 @@
   padding-top: 5px;
 }
 
+.game-type-picker {
+  color: #eee;
+
+  h2 {
+    margin: 0 0 14px;
+    color: #daab63;
+  }
+}
+
+.game-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.game-type-card {
+  box-sizing: border-box;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: @grey_850;
+  color: #eee;
+  text-decoration: none;
+
+  p {
+    margin: 10px 0 0;
+    color: #bbb;
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+.game-type-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong {
+    font-size: 22px;
+  }
+}
+
+.game-type-card--selected {
+  border-color: #daab63;
+  background: fade(#daab63, 12%);
+}
+
+.game-type-card--legacy:hover {
+  border-color: #daab63;
+  background: #444;
+  color: #fff;
+}
+
+.game-type-card--legacy:hover,
+.game-type-card--legacy:focus,
+.game-type-card--legacy:active,
+.game-type-card--legacy:visited {
+  text-decoration: none;
+}
+
+.game-type-status,
+.game-type-release {
+  flex-shrink: 0;
+  color: #daab63;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .game-type-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 .create_game_form {
   margin: 40px 5px;
   padding-left: 15px;
