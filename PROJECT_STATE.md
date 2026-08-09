@@ -8,8 +8,9 @@ Updated: 2026-08-09
 - Branch: `agent/legacy-campaign-foundation`
 - Remotes: `origin` is `chrypnotoad/terraforming-mars`; `upstream` is the
   original `terraforming-mars/terraforming-mars` repository.
-- The current Legacy foundation and project-management files are being
-  published together on this branch. Do not discard existing worktree changes.
+- The current Legacy foundation and project-management files are published on
+  `origin/agent/legacy-campaign-foundation`. Do not discard later worktree
+  changes without reviewing them first.
 
 ## Current state
 
@@ -63,14 +64,12 @@ browser was unavailable.
 
 - Official Legacy mission-specific content is incomplete/unavailable in the
   repository.
-- The current branch must remain pushed to `origin` before another checkout
-  can recover this exact state from Git.
+- Later work should be committed and pushed so other checkouts can recover it
+  from Git.
 
 ## Next recommended action
 
-1. Commit and push the verified foundation and project-management files to
-   `origin`.
-2. Obtain official Mission 1 material, then implement a vertical slice behind
+1. Obtain official Mission 1 material, then implement a vertical slice behind
    the Legacy mode flag.
 
 ## Source of truth

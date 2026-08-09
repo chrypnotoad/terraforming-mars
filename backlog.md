@@ -9,7 +9,8 @@ update the status as work moves between devices or Codex tasks.
   files from the Legacy implementation changes.
 - [x] Re-run focused campaign database, API, and client component tests.
 - [x] Re-run the relevant server/client build and lint checks.
-- [ ] Commit and push the verified foundation to `origin`.
+- [x] Commit and push the verified foundation to `origin` on
+  `agent/legacy-campaign-foundation` (`7b72e4ae0`).
 
 ## Next
 
