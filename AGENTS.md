@@ -28,8 +28,10 @@
   `npm run build:server` and `npm run lint:server` as appropriate.
 - For client or Vue changes, run the focused component tests, then
   `npm run lint:client` and the relevant build command.
+- For changes under `src/styles/`, run `npm run make:css`; `npm run build:client`
+  does not rebuild the global `build/styles.css` bundle.
 - The production server caches compressed frontend assets in memory. After
-  `npm run build:client`, restart only
+  rebuilding client JavaScript or CSS, restart only
   `com.chrypnotoad.terraforming-mars-legacy` before checking the public tunnel;
   do not restart the Quick Tunnel unless its URL may change.
 - For persistence or API changes, cover isolation, save/reload, validation,
