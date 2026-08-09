@@ -58,12 +58,15 @@ server, client, and CSS lint passed.
 ## Runtime and hosting notes
 
 - Historical local URL: `http://localhost:8080/legacy`.
-- Historical temporary public URL:
+- Current temporary public URL (verified 2026-08-09):
   `https://preferences-kept-integral-priced.trycloudflare.com/legacy`.
 - The public URL is a Cloudflare Quick Tunnel and may no longer work or may
   change after a restart. Verify it before sharing it.
 - The Mac mini is the intended always-on host. A named Cloudflare Tunnel and a
   stable domain remain a later hosting task.
+- The production Node server caches compressed frontend bundles in memory.
+  After rebuilding the client, restart the app LaunchAgent before public QA.
+  Restarting only the app preserves the current Quick Tunnel URL.
 
 ## Current blockers
 

@@ -28,6 +28,10 @@
   `npm run build:server` and `npm run lint:server` as appropriate.
 - For client or Vue changes, run the focused component tests, then
   `npm run lint:client` and the relevant build command.
+- The production server caches compressed frontend assets in memory. After
+  `npm run build:client`, restart only
+  `com.chrypnotoad.terraforming-mars-legacy` before checking the public tunnel;
+  do not restart the Quick Tunnel unless its URL may change.
 - For persistence or API changes, cover isolation, save/reload, validation,
   and missing-record behavior.
 - In the final handoff, record the commands that were actually run and any
