@@ -11,6 +11,7 @@ import {daysAgoToSeconds} from './utils';
 import {MultiMap} from 'mnemonist';
 import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
+import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 export const IN_MEMORY_SQLITE_PATH = ':memory:';
 
@@ -56,6 +57,14 @@ export class SQLite implements IDatabase {
         data varchar not null,
         expiration_time timestamp not null,
         PRIMARY KEY (session_id)
+      )`);
+    await this.asyncRun(
+      `CREATE TABLE IF NOT EXISTS legacy_campaign(
+        campaign_id varchar not null,
+        data text not null,
+        created_time timestamp not null default (strftime('%s', 'now')),
+        updated_time timestamp not null default (strftime('%s', 'now')),
+        PRIMARY KEY (campaign_id)
       )`);
   }
 
@@ -278,6 +287,33 @@ export class SQLite implements IDatabase {
         expirationTimeMillis: row.expiration_time * 1000,
       };
     });
+  }
+
+  public async createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    await this.asyncRun(
+      'INSERT INTO legacy_campaign (campaign_id, data, created_time, updated_time) VALUES (?, ?, ?, ?)',
+      [campaign.id, JSON.stringify(campaign), campaign.createdAt, campaign.updatedAt]);
+  }
+
+  public async getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined> {
+    const row = await this.asyncGet('SELECT data FROM legacy_campaign WHERE campaign_id = ?', [campaignId]);
+    return row === undefined ? undefined : JSON.parse(row.data) as LegacyCampaign;
+  }
+
+  public async listLegacyCampaigns(): Promise<Array<LegacyCampaign>> {
+    const rows = await this.asyncAll('SELECT data FROM legacy_campaign ORDER BY updated_time DESC, created_time DESC');
+    return rows.map((row) => JSON.parse(row.data) as LegacyCampaign);
+  }
+
+  public async saveLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    const result = await this.asyncRun(
+      `UPDATE legacy_campaign
+       SET data = ?, updated_time = ?
+       WHERE campaign_id = ?`,
+      [JSON.stringify(campaign), campaign.updatedAt, campaign.id]);
+    if (result.changes === 0) {
+      throw new Error(`Legacy campaign ${campaign.id} not found`);
+    }
   }
 
   protected asyncRun(sql: string, params?: any): Promise<BetterSqlite3.RunResult> {

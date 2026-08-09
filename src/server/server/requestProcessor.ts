@@ -13,6 +13,7 @@ import {ApiGameLogs} from '../routes/ApiGameLogs';
 import {ApiGames} from '../routes/ApiGames';
 import {ApiHeapSnapshot} from '../routes/ApiHeapSnapshot';
 import {ApiIPs} from '../routes/ApiIPs';
+import {ApiLegacyCampaigns} from '../routes/ApiLegacyCampaigns';
 import {ApiLogout} from '../routes/ApiLogout';
 import {ApiMetrics} from '../routes/ApiMetrics';
 import {ApiPlayer} from '../routes/ApiPlayer';
@@ -96,6 +97,7 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.API_GAMES, ApiGames.INSTANCE],
     [paths.API_HEAP_SNAPSHOT, ApiHeapSnapshot.INSTANCE],
     [paths.API_IPS, ApiIPs.INSTANCE],
+    [paths.API_LEGACY_CAMPAIGNS, ApiLegacyCampaigns.INSTANCE],
     [paths.API_METRICS, ApiMetrics.INSTANCE],
     [paths.API_PLAYER, ApiPlayer.INSTANCE],
     [paths.API_STATS, ApiStats.INSTANCE],
@@ -109,6 +111,7 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.HELP, ServeApp.INSTANCE],
     [paths.LOAD, Load.INSTANCE],
     [paths.LOAD_GAME, LoadGame.INSTANCE],
+    [paths.LEGACY_CAMPAIGNS, ServeApp.INSTANCE],
     [paths.LOGIN, Login.INSTANCE],
     [paths.API_LOGOUT, ApiLogout.INSTANCE],
     ['main.js', ServeAsset.INSTANCE],

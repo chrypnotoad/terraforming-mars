@@ -3,6 +3,7 @@ import {GameOptions} from '../game/GameOptions';
 import {GameId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
+import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 export type GameIdLedger = {gameId: GameId, participantIds: Array<ParticipantId>}
 
@@ -135,4 +136,9 @@ export interface IDatabase {
     createSession(session: Session): Promise<void>;
     deleteSession(sessionId: SessionId): Promise<void>;
     getSessions(): Promise<Array<Session>>;
+
+    createLegacyCampaign(campaign: LegacyCampaign): Promise<void>;
+    getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined>;
+    listLegacyCampaigns(): Promise<Array<LegacyCampaign>>;
+    saveLegacyCampaign(campaign: LegacyCampaign): Promise<void>;
 }

@@ -6,6 +6,7 @@ import {SerializedGame} from '../SerializedGame';
 import {Dirent, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync} from 'fs';
 import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
+import {isLegacyCampaignId, LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 const path = require('path');
 const defaultDbFolder = path.resolve(process.cwd(), './db/files');
@@ -15,6 +16,7 @@ export class LocalFilesystem implements IDatabase {
   private readonly historyFolder: string;
   private readonly completedFolder: string;
   private readonly sessionsFolder: string;
+  private readonly legacyCampaignsFolder: string;
   public static quiet: boolean = false;
 
   constructor(dbFolder: string = defaultDbFolder) {
@@ -22,11 +24,12 @@ export class LocalFilesystem implements IDatabase {
     this.historyFolder = path.resolve(dbFolder, 'history');
     this.completedFolder = path.resolve(dbFolder, 'completed');
     this.sessionsFolder = path.resolve(dbFolder, 'sessions');
+    this.legacyCampaignsFolder = path.resolve(dbFolder, 'legacy-campaigns');
   }
 
   public initialize(): Promise<void> {
     console.log(`Starting local database at ${this.dbFolder}`);
-    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder];
+    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder, this.legacyCampaignsFolder];
     for (const folder of dirs) {
       if (!existsSync(folder)) {
         mkdirSync(folder);
@@ -50,6 +53,13 @@ export class LocalFilesystem implements IDatabase {
 
   private sessionFilename(sessionId: SessionId) {
     return path.resolve(this.sessionsFolder, `${sessionId}.json`);
+  }
+
+  private legacyCampaignFilename(campaignId: LegacyCampaignId) {
+    if (!isLegacyCampaignId(campaignId)) {
+      throw new Error(`Invalid legacy campaign id ${campaignId}`);
+    }
+    return path.resolve(this.legacyCampaignsFolder, `${campaignId}.json`);
   }
 
   saveGame(game: IGame): Promise<void> {
@@ -250,6 +260,51 @@ export class LocalFilesystem implements IDatabase {
       }
     }
     return Promise.resolve(sessions);
+  }
+
+  createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    const filename = this.legacyCampaignFilename(campaign.id);
+    if (existsSync(filename)) {
+      return Promise.reject(new Error(`Legacy campaign ${campaign.id} already exists`));
+    }
+    writeFileSync(filename, JSON.stringify(campaign, null, 2));
+    return Promise.resolve();
+  }
+
+  getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined> {
+    const filename = this.legacyCampaignFilename(campaignId);
+    if (!existsSync(filename)) {
+      return Promise.resolve(undefined);
+    }
+    const text = readFileSync(filename);
+    return Promise.resolve(JSON.parse(text.toString()) as LegacyCampaign);
+  }
+
+  listLegacyCampaigns(): Promise<Array<LegacyCampaign>> {
+    const campaigns: Array<LegacyCampaign> = [];
+    const entries = readdirSync(this.legacyCampaignsFolder, {withFileTypes: true});
+    for (const dirent of entries) {
+      if (!dirent.isFile() || !dirent.name.endsWith('.json')) {
+        continue;
+      }
+      const campaignId = dirent.name.substring(0, dirent.name.length - '.json'.length);
+      if (!isLegacyCampaignId(campaignId)) {
+        continue;
+      }
+      const text = readFileSync(this.legacyCampaignFilename(campaignId));
+      campaigns.push(JSON.parse(text.toString()) as LegacyCampaign);
+    }
+    campaigns.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return Promise.resolve(campaigns);
+  }
+
+  saveLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    const filename = this.legacyCampaignFilename(campaign.id);
+    if (!existsSync(filename)) {
+      return Promise.reject(new Error(`Legacy campaign ${campaign.id} not found`));
+    }
+    writeFileSync(filename, JSON.stringify(campaign, null, 2));
+    return Promise.resolve();
   }
 
   private deleteVersion(gameId: GameId, version: number) {

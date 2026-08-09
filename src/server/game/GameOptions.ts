@@ -7,10 +7,15 @@ import {RandomMAOptionType} from '../../common/ma/RandomMAOptionType';
 import {AgendaStyle} from '../../common/turmoil/Types';
 import {Expansion} from '../../common/cards/GameModule';
 import {EscapeVelocityOptions} from '../../common/game/NewGameConfig';
+import {LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 export type GameOptions = {
   boardName: BoardName;
   clonedGamedId: GameId | undefined;
+
+  /** Present only when this game is one mission in a Legacy of Mars campaign. */
+  legacyCampaignId?: LegacyCampaignId;
+  legacyMission?: number;
 
   // Configuration
   undoOption: boolean;

@@ -5,11 +5,13 @@ import {GameIdLedger, IDatabase} from '../../src/server/database/IDatabase';
 import {GameId, ParticipantId} from '../../src/common/Types';
 import {Session, SessionId} from '../../src/server/auth/Session';
 import {Clock} from '../../src/common/Timer';
+import {LegacyCampaign, LegacyCampaignId} from '../../src/common/legacy/LegacyCampaign';
 
 export class InMemoryDatabase implements IDatabase {
   public games: Map<GameId, Array<SerializedGame | undefined>> = new Map();
   protected completedGames: Map<GameId, Date> = new Map();
   protected sessions: Map<SessionId, Session> = new Map();
+  protected legacyCampaigns: Map<LegacyCampaignId, LegacyCampaign> = new Map();
   private clock: Clock;
 
   constructor(clock: Clock = new Clock()) {
@@ -138,5 +140,28 @@ export class InMemoryDatabase implements IDatabase {
   getSessions(): Promise<Array<Session>> {
     const now = this.clock.now();
     return Promise.resolve(Array.from(this.sessions.values()).filter((e) => e.expirationTimeMillis > now));
+  }
+  createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    if (this.legacyCampaigns.has(campaign.id)) {
+      return Promise.reject(new Error(`Legacy campaign ${campaign.id} already exists`));
+    }
+    this.legacyCampaigns.set(campaign.id, structuredClone(campaign));
+    return Promise.resolve();
+  }
+  getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined> {
+    const campaign = this.legacyCampaigns.get(campaignId);
+    return Promise.resolve(campaign === undefined ? undefined : structuredClone(campaign));
+  }
+  listLegacyCampaigns(): Promise<Array<LegacyCampaign>> {
+    const campaigns = Array.from(this.legacyCampaigns.values()).map((campaign) => structuredClone(campaign));
+    campaigns.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return Promise.resolve(campaigns);
+  }
+  saveLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    if (!this.legacyCampaigns.has(campaign.id)) {
+      return Promise.reject(new Error(`Legacy campaign ${campaign.id} not found`));
+    }
+    this.legacyCampaigns.set(campaign.id, structuredClone(campaign));
+    return Promise.resolve();
   }
 }

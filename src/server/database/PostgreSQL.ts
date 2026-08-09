@@ -15,10 +15,11 @@ import {Clock} from '@/common/Timer';
 import {parseInterned} from './parseInterned';
 import {LogMessage} from '@/common/logs/LogMessage';
 import {compressToBrotli, decompressFromBrotli} from './compression';
+import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 type StoredSerializedGame = Omit<SerializedGame, 'gameOptions' | 'gameLog'> & {logLength: number};
 
-export const POSTGRESQL_TABLES = ['game', 'games', 'game_results', 'participants', 'completed_game', 'session'] as const;
+export const POSTGRESQL_TABLES = ['game', 'games', 'game_results', 'participants', 'completed_game', 'session', 'legacy_campaign'] as const;
 
 const POSTGRES_TRIM_COUNT = stringToNumber(process.env.POSTGRES_TRIM_COUNT, 10);
 const DB_COMPRESS_ON_WRITE = stringToBoolean(process.env.DB_COMPRESS_ON_WRITE, false);
@@ -145,6 +146,13 @@ export class PostgreSQL implements IDatabase {
       data varchar not null,
       expiration_time timestamp not null,
       PRIMARY KEY (session_id));
+
+    CREATE TABLE IF NOT EXISTS legacy_campaign(
+      campaign_id varchar not null,
+      data text not null,
+      created_time timestamp not null default now(),
+      updated_time timestamp not null default now(),
+      PRIMARY KEY (campaign_id));
 
     CREATE INDEX IF NOT EXISTS games_i1 on games(save_id);
     CREATE INDEX IF NOT EXISTS games_i2 on games(created_time);
@@ -543,5 +551,36 @@ export class PostgreSQL implements IDatabase {
         expirationTimeMillis: row.expiration_time.getTime(),
       };
     });
+  }
+
+  public async createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    await this.client.query(
+      'INSERT INTO legacy_campaign (campaign_id, data, created_time, updated_time) VALUES($1, $2, $3, $4)',
+      [campaign.id, JSON.stringify(campaign), campaign.createdAt, campaign.updatedAt]);
+  }
+
+  public async getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined> {
+    const result = await this.client.query('SELECT data FROM legacy_campaign WHERE campaign_id = $1', [campaignId]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    const data = result.rows[0].data;
+    return typeof data === 'string' ? JSON.parse(data) as LegacyCampaign : data as LegacyCampaign;
+  }
+
+  public async listLegacyCampaigns(): Promise<Array<LegacyCampaign>> {
+    const result = await this.client.query('SELECT data FROM legacy_campaign ORDER BY updated_time DESC, created_time DESC');
+    return result.rows.map((row) => {
+      return typeof row.data === 'string' ? JSON.parse(row.data) as LegacyCampaign : row.data as LegacyCampaign;
+    });
+  }
+
+  public async saveLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    const result = await this.client.query(
+      'UPDATE legacy_campaign SET data = $1, updated_time = $2 WHERE campaign_id = $3',
+      [JSON.stringify(campaign), campaign.updatedAt, campaign.id]);
+    if (result.rowCount === 0) {
+      throw new Error(`Legacy campaign ${campaign.id} not found`);
+    }
   }
 }

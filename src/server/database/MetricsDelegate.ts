@@ -5,6 +5,7 @@ import {GameOptions} from '../game/GameOptions';
 import {GameId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
+import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 
 // Operation names that get routed to `maintenanceLatency` instead of `operationLatency`. These are
 // batch/background jobs (purge, compress) that run on a much longer timescale than a typical
@@ -154,5 +155,21 @@ export class MetricsDelegate implements IDatabase {
 
   getSessions(): Promise<Array<Session>> {
     return withDatabaseMetrics('getSessions', () => this.delegate.getSessions());
+  }
+
+  createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    return withDatabaseMetrics('createLegacyCampaign', () => this.delegate.createLegacyCampaign(campaign));
+  }
+
+  getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined> {
+    return withDatabaseMetrics('getLegacyCampaign', () => this.delegate.getLegacyCampaign(campaignId));
+  }
+
+  listLegacyCampaigns(): Promise<Array<LegacyCampaign>> {
+    return withDatabaseMetrics('listLegacyCampaigns', () => this.delegate.listLegacyCampaigns());
+  }
+
+  saveLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
+    return withDatabaseMetrics('saveLegacyCampaign', () => this.delegate.saveLegacyCampaign(campaign));
   }
 }

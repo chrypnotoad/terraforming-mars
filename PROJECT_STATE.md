@@ -1,0 +1,81 @@
+# Project State
+
+Updated: 2026-08-09
+
+## Repository
+
+- Working directory: `/Users/chris/Developer/mars legacy/terraforming-mars-legacy`
+- Branch: `agent/legacy-campaign-foundation`
+- Remotes: `origin` is `chrypnotoad/terraforming-mars`; `upstream` is the
+  original `terraforming-mars/terraforming-mars` repository.
+- The current Legacy foundation and project-management files are being
+  published together on this branch. Do not discard existing worktree changes.
+
+## Current state
+
+The repository contains an opt-in Legacy campaign foundation layered onto the
+ordinary Terraforming Mars application. It supports multiple named campaigns,
+stable campaign-player identities, persistent rosters and campaign fields,
+campaign history storage, campaign APIs, a campaign picker, and a seven-mission
+progress dashboard at `/legacy`.
+
+Mission launching is intentionally disabled. The official Mission 1 board,
+briefing, cards, corporations, developments, milestones, awards, and complete
+rules data are still required before claiming a playable, rules-accurate
+mission.
+
+## Last completed work
+
+- Added `LegacyCampaign` shared types and database support for SQLite,
+  PostgreSQL, filesystem, metrics, and in-memory test adapters.
+- Added campaign routes and exact application paths for create, list, and read.
+- Added Legacy campaign UI and the opt-in `legacyOfMars` game option plumbing.
+- Added database, route, and client component regression tests.
+- Added the implementation assessment at
+  `docs/legacy-of-mars-assessment.md`.
+
+## Verification status
+
+The following checks passed for the current changes:
+
+- Focused database/API tests: 6 passing.
+- Legacy campaign component test: 1 passing.
+- `npm run build:server`.
+- `npm run build:client` (Webpack emitted only existing asset-size warnings).
+- `npm run lint:server`.
+- `npm run lint:client`.
+- `npm run lint:css`.
+
+A visual browser click-through was not completed because the in-app preview
+browser was unavailable.
+
+## Runtime and hosting notes
+
+- Historical local URL: `http://localhost:8080/legacy`.
+- Historical temporary public URL:
+  `https://preferences-kept-integral-priced.trycloudflare.com/legacy`.
+- The public URL is a Cloudflare Quick Tunnel and may no longer work or may
+  change after a restart. Verify it before sharing it.
+- The Mac mini is the intended always-on host. A named Cloudflare Tunnel and a
+  stable domain remain a later hosting task.
+
+## Current blockers
+
+- Official Legacy mission-specific content is incomplete/unavailable in the
+  repository.
+- The current branch must remain pushed to `origin` before another checkout
+  can recover this exact state from Git.
+
+## Next recommended action
+
+1. Commit and push the verified foundation and project-management files to
+   `origin`.
+2. Obtain official Mission 1 material, then implement a vertical slice behind
+   the Legacy mode flag.
+
+## Source of truth
+
+- Prioritized work: `backlog.md`
+- Durable Codex instructions: `AGENTS.md`
+- Architecture and source-data assessment:
+  `docs/legacy-of-mars-assessment.md`

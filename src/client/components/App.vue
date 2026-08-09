@@ -17,6 +17,7 @@
         v-else-if="screen === 'create-game-form'"
       />
       <LoadGameForm v-else-if="screen === 'load'"/>
+      <LegacyCampaignHome v-else-if="screen === 'legacy-campaigns'"/>
       <GameHome
         v-else-if="screen === 'game-home' && game !== undefined"
         :game="game"
@@ -63,6 +64,7 @@ const GamesOverview = defineAsyncComponent(() => import(/* webpackChunkName: "ga
 const Help = defineAsyncComponent(() => import(/* webpackChunkName: "help" */ '@/client/components/help/Help.vue'));
 const LoginHome = defineAsyncComponent(() => import(/* webpackChunkName: "login" */ '@/client/components/auth/LoginHome.vue'));
 const LoadGameForm = defineAsyncComponent(() => import(/* webpackChunkName: "load-game" */ '@/client/components/LoadGameForm.vue'));
+const LegacyCampaignHome = defineAsyncComponent(() => import(/* webpackChunkName: "legacy-campaigns" */ '@/client/components/legacy/LegacyCampaignHome.vue'));
 const PlayerHome = defineAsyncComponent(() => import(/* webpackChunkName: "player-home" */ '@/client/components/PlayerHome.vue'));
 const SpectatorHome = defineAsyncComponent(() => import(/* webpackChunkName: "spectator-home" */ '@/client/components/SpectatorHome.vue'));
 const StartScreen = defineAsyncComponent(() => import(/* webpackChunkName: "start-screen" */ '@/client/components/StartScreen.vue'));
@@ -85,6 +87,7 @@ type Screen = 'admin' |
             'games-overview' |
             'help' |
             'load' |
+            'legacy-campaigns' |
             'login-home' |
             'player-home' |
             'spectator-home' |
@@ -145,6 +148,7 @@ export default defineComponent({
     StartScreen,
     CreateGameForm,
     LoadGameForm,
+    LegacyCampaignHome,
     GameHome,
     PlayerHome,
     SpectatorHome,
@@ -291,6 +295,8 @@ export default defineComponent({
       app.screen = 'create-game-form';
     } else if (currentPathname === paths.LOAD) {
       app.screen = 'load';
+    } else if (currentPathname === paths.LEGACY_CAMPAIGNS) {
+      app.screen = 'legacy-campaigns';
     } else if (currentPathname === paths.CARDS) {
       app.screen = 'cards';
     } else if (currentPathname === paths.HELP) {
