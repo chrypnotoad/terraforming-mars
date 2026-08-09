@@ -6,16 +6,13 @@
         <p class="eyebrow">Terraforming Mars</p>
         <h1>Legacy campaigns</h1>
         <p class="subtitle">Long-term campaign state, stored between missions on this server.</p>
+        <p class="release-subtitle">
+          Official game estimated {{ expectedDelivery }}
+          <span aria-hidden="true">·</span>
+          <a :href="gamefoundUrl" target="_blank" rel="noopener noreferrer">Follow on Gamefound ↗</a>
+        </p>
       </div>
     </header>
-
-    <section class="release-notice" aria-label="Legacy of Mars release information">
-      <div>
-        <strong>Official game estimated {{ expectedDelivery }}</strong>
-        <span>Mission implementation will resume when rules-accurate official material is available.</span>
-      </div>
-      <a :href="gamefoundUrl" target="_blank" rel="noopener noreferrer">Follow the project on Gamefound ↗</a>
-    </section>
 
     <div v-if="loading" class="panel message">Loading campaigns…</div>
     <div v-else-if="error" class="panel message error-message">
@@ -324,36 +321,27 @@ export default defineComponent({
 
 .legacy-header {
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
-.release-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 32px;
-  border: 1px solid rgba(228, 182, 109, 0.38);
-  border-radius: 10px;
-  padding: 16px 18px;
-  background: rgba(84, 53, 27, 0.38);
+.release-subtitle {
+  margin-bottom: 0;
+  color: #8995a2;
+  font-size: 14px;
 }
 
-.release-notice strong,
-.release-notice span {
-  display: block;
+.release-subtitle span {
+  margin: 0 5px;
+  color: #66717d;
 }
 
-.release-notice span {
-  margin-top: 4px;
-  color: #bdc5cd;
-  line-height: 1.45;
-}
-
-.release-notice a {
-  flex: 0 0 auto;
+.release-subtitle a {
   color: #e4b66d;
-  font-weight: 700;
+  text-decoration: none;
+}
+
+.release-subtitle a:hover {
+  text-decoration: underline;
 }
 
 h1,
@@ -681,7 +669,6 @@ h3 {
   }
 
   .legacy-header,
-  .release-notice,
   .campaign-toolbar,
   .detail-heading,
   .roster-heading {
@@ -691,10 +678,6 @@ h3 {
 
   .legacy-header {
     gap: 25px;
-  }
-
-  .release-notice {
-    align-items: flex-start;
   }
 
   .detail-grid {
