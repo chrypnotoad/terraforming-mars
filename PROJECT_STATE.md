@@ -124,9 +124,9 @@ The following checks passed for the current changes:
 - Profile, campaign, and game-home client tests: 4 passing.
 - Full server suite after these changes: 7,160 passing.
 - Full client suite after these changes: 446 passing.
-- Evolving Discord card route, renderer, persistence, lifecycle, and retry
-  tests: 11 passing.
-- Full server suite after evolving Discord cards: 7,165 passing.
+- Evolving Discord card route, renderer, native-text, persistence, lifecycle,
+  and retry tests: 12 passing.
+- Full server suite after the readability revision: 7,166 passing.
 - Full client suite after evolving Discord cards: 446 passing.
 - Full lint and production server/client builds passed; Webpack emitted only
   its existing bundle-size warnings.
@@ -198,6 +198,10 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
   button, and the durable database record has no retry error. The test-server
   bot already had effective `Attach Files` permission. The changed client asset
   and game route were purged successfully from Cloudflare's cache.
+- After live Discord-size review, simplified the PNG into a large-type
+  player/corporation roster and moved board, expansions, generation,
+  temperature, oxygen, and ocean counts into native Discord embed fields so
+  the details remain readable at any client scale.
 
 ## Current blockers
 

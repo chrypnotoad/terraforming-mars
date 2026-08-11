@@ -1,6 +1,7 @@
 import {expect} from 'chai';
 import {Phase} from '../../../src/common/Phase';
 import {buildDiscordGameCardSnapshot, DiscordGameCardRenderer, discordGameCardSnapshotHash} from '../../../src/server/discord/DiscordGameCard';
+import {discordGameMessagePayload} from '../../../src/server/discord/DiscordInviteClient';
 import {testGame} from '../../TestGame';
 import {InMemoryDatabase} from '../../testing/InMemoryDatabase';
 
@@ -45,5 +46,22 @@ describe('DiscordGameCard', () => {
     expect(image.readUInt32BE(16)).eq(1200);
     expect(image.readUInt32BE(20)).eq(630);
     expect(image.length).greaterThan(50_000);
+  });
+
+  it('keeps detailed game statistics in native Discord text', () => {
+    const payload = discordGameMessagePayload({
+      gameId: 'gpreview', gameName: 'Tuesday Mars', status: 'active', generation: 7,
+      board: 'Tharsis', expansions: ['Prelude', 'Colonies'], temperature: -8,
+      oxygen: 8, oceans: 5, postedBy: 'Chris',
+      players: [{name: 'Rock', color: 'green', corporation: 'Helion'}],
+    }, 'https://mars.example/game?id=gpreview', true);
+    const embed = (payload.embeds as Array<{fields: Array<{name: string; value: string}>}>)[0];
+
+    expect(embed?.fields[0]?.value).contains('**Board:** Tharsis');
+    expect(embed?.fields[0]?.value).contains('**Expansions:** Prelude, Colonies');
+    expect(embed?.fields[1]?.value).contains('**Generation:** 7');
+    expect(embed?.fields[1]?.value).contains('**Temperature:** -8°C');
+    expect(embed?.fields[1]?.value).contains('**Oxygen:** 8%');
+    expect(embed?.fields[1]?.value).contains('**Oceans:** 5/9');
   });
 });

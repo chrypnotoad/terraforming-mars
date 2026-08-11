@@ -39,6 +39,9 @@ export interface IDiscordGameCardRenderer {
   render(snapshot: DiscordGameCardSnapshot): Promise<Buffer>;
 }
 
+// Bump whenever artwork/layout changes so already-posted games refresh too.
+const DISCORD_GAME_CARD_RENDER_VERSION = 2;
+
 const COLOR_HEX: Record<Color, string> = {
   red: '#ef4444', green: '#22c55e', yellow: '#facc15', blue: '#3b82f6', black: '#6b7280',
   purple: '#a855f7', orange: '#f97316', pink: '#ec4899', neutral: '#d1d5db', bronze: '#b7791f',
@@ -87,7 +90,7 @@ export async function buildDiscordGameCardSnapshot(game: IGame, database: IDatab
 }
 
 export function discordGameCardSnapshotHash(snapshot: DiscordGameCardSnapshot): string {
-  return crypto.createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
+  return crypto.createHash('sha256').update(`${DISCORD_GAME_CARD_RENDER_VERSION}:${JSON.stringify(snapshot)}`).digest('hex');
 }
 
 export class DiscordGameCardRenderer implements IDiscordGameCardRenderer {
@@ -101,48 +104,44 @@ export class DiscordGameCardRenderer implements IDiscordGameCardRenderer {
 
   public async render(snapshot: DiscordGameCardSnapshot): Promise<Buffer> {
     const avatars = await Promise.all(snapshot.players.map((player) => loadAvatar(player.avatar)));
-    const posterAvatar = await loadAvatar(snapshot.postedByAvatar);
-    const svg = this.svg(snapshot, avatars, posterAvatar);
+    const svg = this.svg(snapshot, avatars);
     return Buffer.from(new Resvg(svg, {
       fitTo: {mode: 'width', value: 1200},
       font: {fontFiles: this.fontFiles, loadSystemFonts: false},
     }).render().asPng());
   }
 
-  private svg(snapshot: DiscordGameCardSnapshot, avatars: Array<string | undefined>, posterAvatar?: string): string {
+  private svg(snapshot: DiscordGameCardSnapshot, avatars: Array<string | undefined>): string {
+    const twoColumns = snapshot.players.length > 4;
+    const rowsPerColumn = twoColumns ? Math.ceil(snapshot.players.length / 2) : snapshot.players.length;
     const playerRows = snapshot.players.map((player, index) => {
-      const y = 276 + index * 62;
+      const column = twoColumns ? Math.floor(index / rowsPerColumn) : 0;
+      const row = twoColumns ? index % rowsPerColumn : index;
+      const x = twoColumns ? 64 + column * 570 : 92;
+      const y = 220 + row * 94;
+      const avatarX = x + 35;
+      const textX = x + 86;
+      const scoreX = twoColumns ? x + 520 : 1090;
       const avatar = avatars[index];
-      const name = escapeXml(truncate(player.name, 24));
-      const detail = escapeXml(truncate(player.corporation ?? (snapshot.status === 'lobby' ? 'Choosing corporation' : 'Corporation unknown'), 30));
-      const score = snapshot.status === 'complete' ? `<text x="710" y="${y + 8}" text-anchor="end" class="score">#${player.rank ?? '—'}  ${player.score ?? '—'} VP</text>` : '';
+      const name = escapeXml(truncate(player.name, twoColumns ? 20 : 32));
+      const detail = escapeXml(truncate(player.corporation ?? (snapshot.status === 'lobby' ? 'Choosing corporation' : 'Corporation unknown'), twoColumns ? 26 : 42));
+      const score = snapshot.status === 'complete' ? `<text x="${scoreX}" y="${y + 8}" text-anchor="end" class="score">#${player.rank ?? '—'} · ${player.score ?? '—'} VP</text>` : '';
       const avatarMarkup = avatar === undefined ?
-        `<circle cx="93" cy="${y}" r="24" fill="#121722"/><text x="93" y="${y + 8}" text-anchor="middle" class="initial">${escapeXml(initials(player.name))}</text>` :
-        `<defs><clipPath id="avatar-${index}"><circle cx="93" cy="${y}" r="24"/></clipPath></defs><image href="${avatar}" x="69" y="${y - 24}" width="48" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatar-${index})"/>`;
-      return `${avatarMarkup}<circle cx="93" cy="${y}" r="27" fill="none" stroke="${COLOR_HEX[player.color]}" stroke-width="5"/>
-        <text x="135" y="${y - 2}" class="player-name">${name}</text><text x="135" y="${y + 21}" class="player-detail">${detail}</text>${score}`;
+        `<circle cx="${avatarX}" cy="${y}" r="32" fill="#121722"/><text x="${avatarX}" y="${y + 10}" text-anchor="middle" class="initial">${escapeXml(initials(player.name))}</text>` :
+        `<defs><clipPath id="avatar-${index}"><circle cx="${avatarX}" cy="${y}" r="32"/></clipPath></defs><image href="${avatar}" x="${avatarX - 32}" y="${y - 32}" width="64" height="64" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatar-${index})"/>`;
+      return `${avatarMarkup}<circle cx="${avatarX}" cy="${y}" r="36" fill="none" stroke="${COLOR_HEX[player.color]}" stroke-width="7"/>
+        <text x="${textX}" y="${y - 3}" class="player-name">${name}</text><text x="${textX}" y="${y + 27}" class="player-detail">${detail}</text>${score}`;
     }).join('');
-    const statusLabel = snapshot.status === 'complete' ? 'FINAL RESULTS' : snapshot.status === 'active' ? `IN PROGRESS  ·  GENERATION ${snapshot.generation}` : 'LOBBY OPEN';
-    const expansionText = snapshot.expansions.length === 0 ? 'Base game' : snapshot.expansions.join(' · ');
-    const poster = posterAvatar === undefined ?
-      '' :
-      `<defs><clipPath id="poster"><circle cx="1090" cy="71" r="21"/></clipPath></defs><image href="${posterAvatar}" x="1069" y="50" width="42" height="42" preserveAspectRatio="xMidYMid slice" clip-path="url(#poster)"/>`;
-    const winner = snapshot.status === 'complete' ? snapshot.players.find((player) => player.rank === 1) : undefined;
+    const statusLabel = snapshot.status === 'complete' ? 'FINAL RESULTS' : snapshot.status === 'active' ? 'PLAYERS &amp; CORPORATIONS' : 'GAME ROSTER';
     return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
       <style>
         @font-face{font-family:Future;src:url('${this.fontFiles[0]}')} @font-face{font-family:Prototype;src:url('${this.fontFiles[1]}')}
-        text{font-family:Prototype, sans-serif;fill:#f8fafc}.brand{font-family:Future;font-size:20px;letter-spacing:4px;fill:#f4a45c}.title{font-family:Future;font-size:47px;fill:white}.status{font-size:18px;letter-spacing:3px;fill:#7dd3fc}.player-name{font-size:23px}.player-detail{font-size:16px;fill:#aeb8c7}.score{font-size:22px;fill:#f6ad55}.initial{font-size:19px;font-weight:bold}.meta-label{font-size:14px;letter-spacing:2px;fill:#8b98aa}.meta{font-size:23px}.footer{font-size:14px;fill:#98a4b5}.winner{font-size:18px;fill:#ffd28f}
+        text{font-family:Prototype, sans-serif;fill:#f8fafc}.brand{font-family:Future;font-size:18px;letter-spacing:4px;fill:#f4a45c}.title{font-family:Future;font-size:43px;fill:white}.status{font-size:20px;letter-spacing:3px;fill:#7dd3fc}.player-name{font-size:35px}.player-detail{font-size:24px;fill:#b9c4d4}.score{font-size:24px;fill:#ffd28f}.initial{font-size:23px;font-weight:bold}.footer{font-size:15px;fill:#98a4b5}
       </style>
       <image href="${this.backgroundDataUrl}" x="0" y="0" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
-      <rect x="0" y="0" width="1200" height="630" fill="url(#shade)"/><defs><linearGradient id="shade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#05070b" stop-opacity=".93"/><stop offset=".68" stop-color="#05070b" stop-opacity=".62"/><stop offset="1" stop-color="#05070b" stop-opacity=".25"/></linearGradient></defs>
-      <text x="64" y="57" class="brand">MARS CHRYPNOTOAD</text><text x="64" y="117" class="title">${escapeXml(truncate(snapshot.gameName, 34))}</text>
-      <text x="66" y="159" class="status">${statusLabel}</text>${winner === undefined ? '' : `<text x="66" y="194" class="winner">★ ${escapeXml(truncate(winner.name, 28))} wins Mars</text>`}
-      <line x1="65" y1="214" x2="730" y2="214" stroke="#c86839" stroke-width="2" opacity=".8"/>${playerRows}
-      <rect x="774" y="222" width="360" height="257" rx="18" fill="#080b11" fill-opacity=".78" stroke="#e17a3e" stroke-opacity=".45"/>
-      <text x="808" y="265" class="meta-label">BOARD</text><text x="808" y="296" class="meta">${escapeXml(truncate(snapshot.board, 25))}</text>
-      <text x="808" y="345" class="meta-label">EXPANSIONS</text><text x="808" y="376" class="meta">${escapeXml(truncate(expansionText, 29))}</text>
-      <text x="808" y="425" class="meta-label">MARS</text><text x="808" y="456" class="meta">${snapshot.temperature}°C  ·  ${snapshot.oxygen}% O2  ·  ${snapshot.oceans}/9 oceans</text>
-      ${poster}<text x="1127" y="67" text-anchor="end" class="footer">Posted by</text><text x="1127" y="87" text-anchor="end" class="footer">${escapeXml(truncate(snapshot.postedBy, 22))}</text>
+      <rect x="0" y="0" width="1200" height="630" fill="url(#shade)"/><defs><linearGradient id="shade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#05070b" stop-opacity=".95"/><stop offset=".75" stop-color="#05070b" stop-opacity=".82"/><stop offset="1" stop-color="#05070b" stop-opacity=".55"/></linearGradient></defs>
+      <text x="64" y="48" class="brand">MARS CHRYPNOTOAD</text><text x="64" y="103" class="title">${escapeXml(truncate(snapshot.gameName, 39))}</text>
+      <text x="66" y="145" class="status">${statusLabel}</text><line x1="65" y1="168" x2="1135" y2="168" stroke="#c86839" stroke-width="2" opacity=".8"/>${playerRows}
       <text x="65" y="596" class="footer">GAME ${escapeXml(snapshot.gameId.toUpperCase())}</text><text x="1135" y="596" text-anchor="end" class="footer">TERRAFORM MARS. CLAIM THE FUTURE.</text>
     </svg>`;
   }

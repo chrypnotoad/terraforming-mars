@@ -37,7 +37,7 @@ export class DiscordInviteClient implements IDiscordInviteClient {
 
   private async send(url: string, method: 'POST' | 'PATCH', snapshot: DiscordGameCardSnapshot, gameUrl: string, image: Buffer, create: boolean): Promise<Response> {
     const form = new FormData();
-    const payload = messagePayload(snapshot, gameUrl, create);
+    const payload = discordGameMessagePayload(snapshot, gameUrl, create);
     form.append('payload_json', JSON.stringify(payload));
     form.append('files[0]', new Blob([Uint8Array.from(image)], {type: 'image/png'}), 'mars-game-card.png');
     const response = await fetch(url, {
@@ -56,8 +56,9 @@ export class DiscordInviteClient implements IDiscordInviteClient {
   }
 }
 
-function messagePayload(snapshot: DiscordGameCardSnapshot, gameUrl: string, create: boolean): Record<string, unknown> {
+export function discordGameMessagePayload(snapshot: DiscordGameCardSnapshot, gameUrl: string, create: boolean): Record<string, unknown> {
   const status = snapshot.status === 'complete' ? 'Final results' : snapshot.status === 'active' ? `Generation ${snapshot.generation}` : 'Lobby open';
+  const expansions = snapshot.expansions.length === 0 ? 'Base game' : snapshot.expansions.map(escapeMarkdown).join(', ');
   const playerSummary = snapshot.players.map((player) => {
     const result = snapshot.status === 'complete' ? ` — #${player.rank ?? '—'}, ${player.score ?? '—'} VP` : '';
     return `${colorEmoji(player.color)} **${escapeMarkdown(player.name)}**${player.corporation ? ` · ${escapeMarkdown(player.corporation)}` : ''}${result}`;
@@ -71,6 +72,10 @@ function messagePayload(snapshot: DiscordGameCardSnapshot, gameUrl: string, crea
       description: playerSummary,
       url: gameUrl,
       color: 0xc86839,
+      fields: [
+        {name: 'Setup', value: `**Board:** ${escapeMarkdown(snapshot.board)}\n**Expansions:** ${expansions}`, inline: true},
+        {name: snapshot.status === 'complete' ? 'Final Mars' : 'Mars now', value: `**Generation:** ${snapshot.generation}\n**Temperature:** ${snapshot.temperature}°C\n**Oxygen:** ${snapshot.oxygen}%\n**Oceans:** ${snapshot.oceans}/9`, inline: true},
+      ],
       image: {url: 'attachment://mars-game-card.png'},
       footer: {text: `Game ${snapshot.gameId} · Posted by ${snapshot.postedBy}`},
       timestamp: new Date().toISOString(),
