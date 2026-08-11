@@ -7,6 +7,7 @@ import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../common/discord/DiscordGamePost';
 
 // Operation names that get routed to `maintenanceLatency` instead of `operationLatency`. These are
 // batch/background jobs (purge, compress) that run on a much longer timescale than a typical
@@ -196,6 +197,18 @@ export class MetricsDelegate implements IDatabase {
 
   listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
     return withDatabaseMetrics('listCompletedGameResults', () => this.delegate.listCompletedGameResults());
+  }
+
+  getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined> {
+    return withDatabaseMetrics('getDiscordGamePost', () => this.delegate.getDiscordGamePost(gameId));
+  }
+
+  listDiscordGamePosts(): Promise<Array<DiscordGamePost>> {
+    return withDatabaseMetrics('listDiscordGamePosts', () => this.delegate.listDiscordGamePosts());
+  }
+
+  saveDiscordGamePost(post: DiscordGamePost): Promise<void> {
+    return withDatabaseMetrics('saveDiscordGamePost', () => this.delegate.saveDiscordGamePost(post));
   }
 
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

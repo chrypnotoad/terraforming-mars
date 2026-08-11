@@ -84,11 +84,14 @@ https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-
 - Added safe per-game profile unlinking, head-to-head win/loss/tie aggregation,
   linked Legacy campaign history, and optional profile selection when creating
   a campaign roster. Removing a claim never deletes or changes the game.
-- Implemented the minimum one-channel Discord bot flow: a signed-in profile can
-  post a rich game invitation from `/game`, with a link button, same-origin
-  protection, per-user rate limiting, 30-second duplicate suppression, and no
-  Gateway or message-reading access. The UI remains hidden until the bot token
-  and channel ID are configured.
+- Upgraded the one-channel Discord bot flow into a durable, evolving game card.
+  A signed-in profile creates one 1200×630 invitation per game; subsequent
+  clicks and game saves update that same Discord message. Generated Mars
+  artwork, profile avatars/color rings, corporations, board/expansions, global
+  parameters, generation/status, and final ranks/scores are rendered server-side
+  to PNG. Snapshot hashing, save coalescing, throttling, and persisted retry
+  state keep Discord failures isolated from normal gameplay. The bot still uses
+  no Gateway or message-reading access.
 
 ## Verification status
 
@@ -121,6 +124,12 @@ The following checks passed for the current changes:
 - Profile, campaign, and game-home client tests: 4 passing.
 - Full server suite after these changes: 7,160 passing.
 - Full client suite after these changes: 446 passing.
+- Evolving Discord card route, renderer, persistence, lifecycle, and retry
+  tests: 11 passing.
+- Full server suite after evolving Discord cards: 7,165 passing.
+- Full client suite after evolving Discord cards: 446 passing.
+- Full lint and production server/client builds passed; Webpack emitted only
+  its existing bundle-size warnings.
 - Server/client lint and production server/client builds passed after the new
   work; Webpack emitted only its existing bundle-size warnings.
 - `npm run build:server` and `npm run lint:server` after the retention and
@@ -183,6 +192,12 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
   configured privately for `#general`. A live invitation for game
   `g8e2f323bdf8b` posted successfully on 2026-08-10, validating the production
   bot token, configured destination, rich embed, and Open Game link.
+- The evolving Discord card implementation was deployed and validated live on
+  2026-08-10. The existing invitation for `g8e2f323bdf8b` was adopted in place:
+  its original Discord message ID now renders the generated PNG and Open Game
+  button, and the durable database record has no retry error. The test-server
+  bot already had effective `Attach Files` permission. The changed client asset
+  and game route were purged successfully from Cloudflare's cache.
 
 ## Current blockers
 
@@ -200,10 +215,9 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
    guest names, and spectator-host creation on the deployed New Game page.
 2. Create the next real game using selected profiles and confirm its completed
    results appear in My Profile.
-3. Verify the visible `Post game to Discord` button once from a signed-in game
-   page; direct production-client posting and automated browser-path coverage
-   have passed, but browser automation had no active browser session for the
-   final authenticated click.
+3. Post one evolving card from a signed-in game page in the test server, make a
+   visible game change, and confirm the same Discord message updates; then leave
+   it in place through game completion to validate final-results mode live.
 4. Decide how account-level Discord unlink should work before adding it:
    Discord is currently the only login/recovery method. Per-game unlinking is
    already safe and implemented.

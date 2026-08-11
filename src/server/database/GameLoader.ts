@@ -11,6 +11,7 @@ import {timeAsync} from '../utils/timer';
 import {durationToMilliseconds} from '../utils/durations';
 import {CacheConfig} from './CacheConfig';
 import {Clock} from '../../common/Timer';
+import {DiscordGamePostService} from '../discord/DiscordGamePostService';
 
 const metrics = {
   initialize: new prometheus.Gauge({
@@ -255,6 +256,7 @@ export class GameLoader implements IGameLoader {
   public async completeGame(game: IGame) {
     const database = Database.getInstance();
     await database.saveGame(game);
+    DiscordGamePostService.INSTANCE.schedule(game, 0);
     try {
       this.mark(game.id);
       await database.markFinished(game.id);
@@ -265,11 +267,12 @@ export class GameLoader implements IGameLoader {
     }
   }
 
-  public saveGame(game: IGame): Promise<void> {
+  public async saveGame(game: IGame): Promise<void> {
     if (this.purgedGames.includes(game.id)) {
       throw new Error('This game no longer exists');
     }
-    return Database.getInstance().saveGame(game);
+    await Database.getInstance().saveGame(game);
+    DiscordGamePostService.INSTANCE.schedule(game);
   }
 
   public async maintenance() {

@@ -5,6 +5,7 @@ import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../common/discord/DiscordGamePost';
 
 export type GameIdLedger = {gameId: GameId, participantIds: Array<ParticipantId>}
 
@@ -146,6 +147,10 @@ export interface IDatabase {
     getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined>;
     listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>>;
     listCompletedGameResults(): Promise<Array<CompletedGameResult>>;
+
+    getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined>;
+    listDiscordGamePosts(): Promise<Array<DiscordGamePost>>;
+    saveDiscordGamePost(post: DiscordGamePost): Promise<void>;
 
     createLegacyCampaign(campaign: LegacyCampaign): Promise<void>;
     getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined>;

@@ -7,6 +7,7 @@ import {Session, SessionId} from '../../src/server/auth/Session';
 import {Clock} from '../../src/common/Timer';
 import {LegacyCampaign, LegacyCampaignId} from '../../src/common/legacy/LegacyCampaign';
 import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../src/common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../src/common/discord/DiscordGamePost';
 
 export class InMemoryDatabase implements IDatabase {
   public games: Map<GameId, Array<SerializedGame | undefined>> = new Map();
@@ -15,6 +16,7 @@ export class InMemoryDatabase implements IDatabase {
   protected legacyCampaigns: Map<LegacyCampaignId, LegacyCampaign> = new Map();
   protected playerProfiles: Map<PlayerProfileId, PlayerProfile> = new Map();
   protected playerClaims: Map<ParticipantId, PlayerClaim> = new Map();
+  protected discordGamePosts: Map<GameId, DiscordGamePost> = new Map();
   protected gameResults: Array<CompletedGameResult> = [];
   private clock: Clock;
 
@@ -204,6 +206,17 @@ export class InMemoryDatabase implements IDatabase {
   }
   listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
     return Promise.resolve(structuredClone(this.gameResults));
+  }
+  getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined> {
+    const post = this.discordGamePosts.get(gameId);
+    return Promise.resolve(post === undefined ? undefined : structuredClone(post));
+  }
+  listDiscordGamePosts(): Promise<Array<DiscordGamePost>> {
+    return Promise.resolve([...this.discordGamePosts.values()].map((post) => structuredClone(post)));
+  }
+  saveDiscordGamePost(post: DiscordGamePost): Promise<void> {
+    this.discordGamePosts.set(post.gameId, structuredClone(post));
+    return Promise.resolve();
   }
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
     if (this.legacyCampaigns.has(campaign.id)) {

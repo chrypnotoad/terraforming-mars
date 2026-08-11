@@ -156,8 +156,8 @@ export default defineComponent({
         if (!response.ok) {
           throw new Error('Discord could not receive the game link.');
         }
-        const result = await response.json() as {messageUrl?: string};
-        this.discordPostMessage = 'Posted to Discord.';
+        const result = await response.json() as {messageUrl?: string; created?: boolean};
+        this.discordPostMessage = result.created === false ? 'Updated the existing Discord card.' : 'Posted to Discord.';
         this.discordMessageUrl = result.messageUrl ?? '';
       } catch (error) {
         this.discordPostMessage = error instanceof Error ? error.message : 'Discord could not receive the game link.';

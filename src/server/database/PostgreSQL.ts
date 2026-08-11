@@ -18,10 +18,11 @@ import {LogMessage} from '@/common/logs/LogMessage';
 import {compressToBrotli, decompressFromBrotli} from './compression';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../common/discord/DiscordGamePost';
 
 type StoredSerializedGame = Omit<SerializedGame, 'gameOptions' | 'gameLog'> & {logLength: number};
 
-export const POSTGRESQL_TABLES = ['game', 'games', 'game_results', 'participants', 'completed_game', 'session', 'legacy_campaign', 'player_profile', 'player_claim'] as const;
+export const POSTGRESQL_TABLES = ['game', 'games', 'game_results', 'participants', 'completed_game', 'session', 'legacy_campaign', 'player_profile', 'player_claim', 'discord_game_post'] as const;
 
 const POSTGRES_TRIM_COUNT = stringToNumber(process.env.POSTGRES_TRIM_COUNT, 10);
 const DB_COMPRESS_ON_WRITE = stringToBoolean(process.env.DB_COMPRESS_ON_WRITE, false);
@@ -163,6 +164,12 @@ export class PostgreSQL implements IDatabase {
       created_time timestamp not null default now(),
       updated_time timestamp not null default now(),
       PRIMARY KEY (profile_id));
+
+    CREATE TABLE IF NOT EXISTS discord_game_post(
+      game_id varchar not null,
+      data text not null,
+      updated_time timestamp not null default now(),
+      PRIMARY KEY (game_id));
 
     CREATE TABLE IF NOT EXISTS player_claim(
       participant_id varchar not null,
@@ -663,6 +670,27 @@ export class PostgreSQL implements IDatabase {
       gameOptions: typeof row.game_options === 'string' ? JSON.parse(row.game_options) : row.game_options,
       scores: typeof row.scores === 'string' ? JSON.parse(row.scores) : row.scores,
     }));
+  }
+
+  public async getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined> {
+    const result = await this.client.query('SELECT data FROM discord_game_post WHERE game_id = $1', [gameId]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    const data = result.rows[0].data;
+    return typeof data === 'string' ? JSON.parse(data) : data;
+  }
+
+  public async listDiscordGamePosts(): Promise<Array<DiscordGamePost>> {
+    const result = await this.client.query('SELECT data FROM discord_game_post ORDER BY updated_time DESC');
+    return result.rows.map((row) => typeof row.data === 'string' ? JSON.parse(row.data) : row.data);
+  }
+
+  public async saveDiscordGamePost(post: DiscordGamePost): Promise<void> {
+    await this.client.query(
+      `INSERT INTO discord_game_post (game_id, data, updated_time) VALUES ($1, $2, $3)
+       ON CONFLICT (game_id) DO UPDATE SET data = excluded.data, updated_time = excluded.updated_time`,
+      [post.gameId, JSON.stringify(post), post.updatedAt]);
   }
 
   public async createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

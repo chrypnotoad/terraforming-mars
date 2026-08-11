@@ -14,27 +14,35 @@ update the status as work moves between devices or Codex tasks.
 
 ## Next
 
-- [x] **Post game invitations to Discord from the game page.** Preserve the
+- [x] **Post evolving game cards to Discord from the game page.** Preserve the
   current flow and shared `/game?id=...` URL: after creating a game, the host
   can click `Post to Discord` instead of copying and pasting the URL manually.
   Keep `Copy game link` available for account-free play and as a fallback.
   - [x] Use the existing Discord application as a guild-installed bot; a server
     administrator performs the one-time installation.
-  - [x] Request only `View Channel`, `Send Messages`, and `Embed Links` in one
-    designated game channel. No message-reading, member-list, moderation,
+  - [x] Request only `View Channel`, `Send Messages`, `Embed Links`, and `Attach
+    Files` in one designated game channel. The attachment permission supports
+    the generated game-card PNG. No message-reading, member-list, moderation,
     presence, or privileged gateway permissions.
   - [x] Store the bot token as a server secret and configure one guild/channel ID
     initially; channel-selection UI and multi-server support are out of scope.
   - [x] Add an authenticated, same-origin, rate-limited server endpoint that
     validates the game exists before the bot posts. Require a linked Discord
     profile to use the button; invited players still need no account.
-  - [x] Post a minimal rich invitation containing the game summary, creator when
-    available, and an `Open Game` link button pointing to the existing game URL.
-    Do not add a new lobby, join token, or seat-claim flow.
-  - [x] Show clear posted/error feedback without navigating away, prevent rapid
-    duplicate posts, and retain a manual retry/copy-link path.
+  - [x] Post a generated 1200×630 Mars broadcast card containing the creator,
+    players, avatar/color rings, corporations, board, expansions, global
+    parameters, generation/status, and an `Open Game` link. At game end, turn
+    the same card into final results with ranks and scores. Do not add a new
+    lobby, join token, or seat-claim flow.
+  - [x] Persist the Discord message ID per game and update that one message as
+    visible game state changes. Coalesce saves, skip unchanged snapshots,
+    throttle Discord writes, and retain retry/error state without risking game
+    saves when Discord is unavailable.
+  - [x] Show clear posted/updated/error feedback without navigating away, limit
+    excessive manual refreshes, and retain a manual retry/copy-link path.
   - [x] Test authorization, CSRF, rate limiting, missing games, Discord API
-    failures, duplicate suppression, and the unchanged copy/paste flow.
+    failures, idempotent updates, renderer output, background retry behavior,
+    and the unchanged copy/paste flow.
 - [ ] **Optional player profiles and lifetime statistics (implementation
   largely complete; account-level Discord unlink remains).** Preserve the
   account-free flow: hosts can still enter arbitrary player names and share

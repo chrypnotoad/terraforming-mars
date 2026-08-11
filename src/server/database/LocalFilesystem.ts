@@ -8,6 +8,7 @@ import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
 import {isLegacyCampaignId, LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 import {CompletedGameResult, isPlayerProfileId, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../common/discord/DiscordGamePost';
 
 const path = require('path');
 const defaultDbFolder = path.resolve(process.cwd(), './db/files');
@@ -20,6 +21,7 @@ export class LocalFilesystem implements IDatabase {
   private readonly legacyCampaignsFolder: string;
   private readonly playerProfilesFolder: string;
   private readonly playerClaimsFolder: string;
+  private readonly discordGamePostsFolder: string;
   public static quiet: boolean = false;
 
   constructor(dbFolder: string = defaultDbFolder) {
@@ -30,11 +32,12 @@ export class LocalFilesystem implements IDatabase {
     this.legacyCampaignsFolder = path.resolve(dbFolder, 'legacy-campaigns');
     this.playerProfilesFolder = path.resolve(dbFolder, 'player-profiles');
     this.playerClaimsFolder = path.resolve(dbFolder, 'player-claims');
+    this.discordGamePostsFolder = path.resolve(dbFolder, 'discord-game-posts');
   }
 
   public initialize(): Promise<void> {
     console.log(`Starting local database at ${this.dbFolder}`);
-    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder, this.legacyCampaignsFolder, this.playerProfilesFolder, this.playerClaimsFolder];
+    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder, this.legacyCampaignsFolder, this.playerProfilesFolder, this.playerClaimsFolder, this.discordGamePostsFolder];
     for (const folder of dirs) {
       if (!existsSync(folder)) {
         mkdirSync(folder);
@@ -79,6 +82,13 @@ export class LocalFilesystem implements IDatabase {
       throw new Error(`Invalid player id ${participantId}`);
     }
     return path.resolve(this.playerClaimsFolder, `${participantId}.json`);
+  }
+
+  private discordGamePostFilename(gameId: GameId): string {
+    if (!isGameId(gameId)) {
+      throw new Error(`Invalid game id ${gameId}`);
+    }
+    return path.resolve(this.discordGamePostsFolder, `${gameId}.json`);
   }
 
   saveGame(game: IGame): Promise<void> {
@@ -385,6 +395,26 @@ export class LocalFilesystem implements IDatabase {
       });
     }
     return Promise.resolve(results);
+  }
+
+  getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined> {
+    const filename = this.discordGamePostFilename(gameId);
+    if (!existsSync(filename)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(JSON.parse(readFileSync(filename).toString()) as DiscordGamePost);
+  }
+
+  listDiscordGamePosts(): Promise<Array<DiscordGamePost>> {
+    return Promise.resolve(readdirSync(this.discordGamePostsFolder, {withFileTypes: true})
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+      .map((entry) => JSON.parse(readFileSync(path.resolve(this.discordGamePostsFolder, entry.name)).toString()) as DiscordGamePost)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }
+
+  saveDiscordGamePost(post: DiscordGamePost): Promise<void> {
+    writeFileSync(this.discordGamePostFilename(post.gameId), JSON.stringify(post, null, 2));
+    return Promise.resolve();
   }
 
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

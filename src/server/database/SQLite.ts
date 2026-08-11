@@ -14,6 +14,7 @@ import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
 import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {DiscordGamePost} from '../../common/discord/DiscordGamePost';
 
 export const IN_MEMORY_SQLITE_PATH = ':memory:';
 
@@ -84,6 +85,13 @@ export class SQLite implements IDatabase {
         profile_id varchar not null,
         claimed_time timestamp not null default (strftime('%s', 'now')),
         PRIMARY KEY (participant_id)
+      )`);
+    await this.asyncRun(
+      `CREATE TABLE IF NOT EXISTS discord_game_post(
+        game_id varchar not null,
+        data text not null,
+        updated_time timestamp not null default (strftime('%s', 'now')),
+        PRIMARY KEY (game_id)
       )`);
     const resultColumns = await this.asyncAll('PRAGMA table_info(game_results)');
     if (!resultColumns.some((column) => column.name === 'completed_time')) {
@@ -399,6 +407,23 @@ export class SQLite implements IDatabase {
       gameOptions: JSON.parse(row.game_options),
       scores: JSON.parse(row.scores),
     }));
+  }
+
+  public async getDiscordGamePost(gameId: GameId): Promise<DiscordGamePost | undefined> {
+    const row = await this.asyncGet('SELECT data FROM discord_game_post WHERE game_id = ?', [gameId]);
+    return row === undefined ? undefined : JSON.parse(row.data) as DiscordGamePost;
+  }
+
+  public async listDiscordGamePosts(): Promise<Array<DiscordGamePost>> {
+    const rows = await this.asyncAll('SELECT data FROM discord_game_post ORDER BY updated_time DESC');
+    return rows.map((row) => JSON.parse(row.data) as DiscordGamePost);
+  }
+
+  public async saveDiscordGamePost(post: DiscordGamePost): Promise<void> {
+    await this.asyncRun(
+      `INSERT INTO discord_game_post (game_id, data, updated_time) VALUES (?, ?, ?)
+       ON CONFLICT (game_id) DO UPDATE SET data = excluded.data, updated_time = excluded.updated_time`,
+      [post.gameId, JSON.stringify(post), post.updatedAt]);
   }
 
   public async createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
