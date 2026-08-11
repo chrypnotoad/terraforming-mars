@@ -182,6 +182,10 @@ export class MetricsDelegate implements IDatabase {
     return withDatabaseMetrics('claimPlayer', () => this.delegate.claimPlayer(claim));
   }
 
+  unclaimPlayer(participantId: ParticipantId, profileId: PlayerProfileId): Promise<boolean> {
+    return withDatabaseMetrics('unclaimPlayer', () => this.delegate.unclaimPlayer(participantId, profileId));
+  }
+
   getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
     return withDatabaseMetrics('getPlayerClaim', () => this.delegate.getPlayerClaim(participantId));
   }

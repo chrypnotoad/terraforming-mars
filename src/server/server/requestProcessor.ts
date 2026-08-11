@@ -7,6 +7,7 @@ import {SessionId} from '../auth/Session';
 import {GameLoader} from '../database/GameLoader';
 import {ApiCloneableGame} from '../routes/ApiCloneableGame';
 import {ApiCreateGame} from '../routes/ApiCreateGame';
+import {ApiDiscordInvite} from '../routes/ApiDiscordInvite';
 import {ApiGame} from '../routes/ApiGame';
 import {ApiGameHistory} from '../routes/ApiGameHistory';
 import {ApiGameLogs} from '../routes/ApiGameLogs';
@@ -94,6 +95,7 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.ADMIN, ServeApp.INSTANCE],
     [paths.API_CLONEABLEGAME, ApiCloneableGame.INSTANCE],
     [paths.API_CREATEGAME, ApiCreateGame.INSTANCE],
+    [paths.API_DISCORD_INVITE, ApiDiscordInvite.INSTANCE],
     [paths.API_GAME, ApiGame.INSTANCE],
     [paths.API_GAME_HISTORY, ApiGameHistory.INSTANCE],
     [paths.API_GAME_LOGS, ApiGameLogs.INSTANCE],

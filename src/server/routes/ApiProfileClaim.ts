@@ -24,9 +24,18 @@ export class ApiProfileClaim extends Handler {
       return;
     }
     try {
-      const body = await readJsonRequest(req, 4096) as {participantId?: unknown};
+      const body = await readJsonRequest(req, 4096) as {participantId?: unknown; action?: unknown};
       if (!isPlayerId(body.participantId)) {
         throw new RequestBodyError('A valid player ID is required');
+      }
+      const profile = await this.profileService.getOrCreate(ctx.user, new Date(ctx.clock.now()));
+      if (body.action === 'unclaim') {
+        if (!await this.database.unclaimPlayer(body.participantId, profile.id)) {
+          responses.notFound(req, res, 'Player claim not found');
+          return;
+        }
+        responses.writeJson(res, ctx, await this.profileService.getResponse(profile));
+        return;
       }
       const game = await ctx.gameLoader.getGame(body.participantId);
       if (game === undefined) {
@@ -34,7 +43,6 @@ export class ApiProfileClaim extends Handler {
         return;
       }
       const player = game.getPlayerById(body.participantId);
-      const profile = await this.profileService.getOrCreate(ctx.user, new Date(ctx.clock.now()));
       await this.database.claimPlayer({
         participantId: player.id,
         gameId: game.id,

@@ -1,4 +1,5 @@
 import {GameId} from '../Types';
+import type {PlayerProfileId} from '../profile/PlayerProfile';
 
 export type LegacyCampaignId = `c${string}`;
 export type LegacyCampaignPlayerId = `lp${string}`;
@@ -12,6 +13,7 @@ export const LEGACY_EXPECTED_DELIVERY = 'May 2027';
 export interface LegacyCampaignPlayer {
   id: LegacyCampaignPlayerId;
   name: string;
+  profileId?: PlayerProfileId;
   corporation?: string;
   titlePoints: number;
   nextMissionBonusMegacredits: number;
@@ -68,7 +70,7 @@ export interface LegacyCampaignSummary {
 
 export interface CreateLegacyCampaignRequest {
   name: string;
-  players: Array<{name: string}>;
+  players: Array<{name: string; profileId?: PlayerProfileId}>;
 }
 
 export function isLegacyCampaignId(value: unknown): value is LegacyCampaignId {

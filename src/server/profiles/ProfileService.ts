@@ -92,6 +92,66 @@ export class ProfileService {
     });
     const wins = games.filter((game) => game.won).length;
     const totalScore = games.reduce((sum, game) => sum + game.playerScore, 0);
+    const currentResultsByGame = new Map(games.map((game) => [game.gameId, game]));
+    const headToHeadMap = new Map<string, {
+      profileId: PlayerProfile['id'];
+      displayName: string;
+      avatarUrl?: string;
+      games: number;
+      wins: number;
+      losses: number;
+      ties: number;
+    }>();
+    for (const result of results) {
+      const currentResult = currentResultsByGame.get(result.gameId);
+      if (currentResult === undefined) {
+        continue;
+      }
+      for (const opponentResult of result.scores) {
+        if (opponentResult.participantId === undefined || participantIds.has(opponentResult.participantId as PlayerId)) {
+          continue;
+        }
+        const claim = await this.database.getPlayerClaim(opponentResult.participantId);
+        if (claim === undefined || claim.profileId === profile.id) {
+          continue;
+        }
+        const opponent = await this.database.getPlayerProfile(claim.profileId);
+        if (opponent === undefined) {
+          continue;
+        }
+        const row = headToHeadMap.get(opponent.id) ?? {
+          profileId: opponent.id,
+          displayName: opponent.displayName,
+          avatarUrl: opponent.customAvatarDataUrl ?? opponent.discordAvatarUrl,
+          games: 0,
+          wins: 0,
+          losses: 0,
+          ties: 0,
+        };
+        row.games++;
+        const comparison = compareResults(currentResult, opponentResult);
+        if (comparison < 0) {
+          row.wins++;
+        } else if (comparison > 0) {
+          row.losses++;
+        } else {
+          row.ties++;
+        }
+        headToHeadMap.set(opponent.id, row);
+      }
+    }
+    const campaigns = (await this.database.listLegacyCampaigns())
+      .flatMap((campaign) => campaign.players
+        .filter((player) => player.profileId === profile.id)
+        .map((player) => ({
+          id: campaign.id,
+          name: campaign.name,
+          status: campaign.status,
+          currentMission: campaign.currentMission,
+          completedMissions: campaign.missionHistory.length,
+          playerName: player.name,
+        })))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     return {
       gamesPlayed: games.length,
@@ -103,6 +163,15 @@ export class ProfileService {
       corporationCounts,
       aliases: [...aliases].sort((a, b) => a.localeCompare(b)),
       games: games.sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
+      headToHead: [...headToHeadMap.values()].sort((a, b) => b.games - a.games || a.displayName.localeCompare(b.displayName)),
+      campaigns,
     };
   }
+}
+
+function compareResults(current: {rank?: number; playerScore: number}, opponent: {rank?: number; playerScore: number}): number {
+  if (current.rank !== undefined && opponent.rank !== undefined) {
+    return current.rank - opponent.rank;
+  }
+  return opponent.playerScore - current.playerScore;
 }

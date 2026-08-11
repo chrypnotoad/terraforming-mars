@@ -121,6 +121,7 @@ function writeBuildMetadata() {
     waitingForTimeout: getEnv('WAITING_FOR_TIMEOUT', constants.DEFAULT_WAITING_FOR_TIMEOUT),
     logLength: getEnv('LOG_LENGTH', constants.DEFAULT_LOG_LENGTH),
     discordClientId: process.env['DISCORD_CLIENT_ID'] ?? '',
+    discordPostConfigured: Boolean(process.env['DISCORD_BOT_TOKEN'] && process.env['DISCORD_INVITE_CHANNEL_ID']),
   };
   fs.writeFileSync('src/genfiles/settings.json', JSON.stringify(settings));
 }

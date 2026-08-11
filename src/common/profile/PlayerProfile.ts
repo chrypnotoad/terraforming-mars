@@ -1,5 +1,6 @@
 import {Color} from '../Color';
 import {GameId, ParticipantId} from '../Types';
+import {LegacyCampaignId, LegacyCampaignStatus} from '../legacy/LegacyCampaign';
 
 export type PlayerProfileId = `u${string}`;
 
@@ -60,6 +61,23 @@ export interface PlayerProfileStats {
   corporationCounts: Array<{corporation: string; games: number; wins: number}>;
   aliases: Array<string>;
   games: Array<ProfileGameResult>;
+  headToHead: Array<{
+    profileId: PlayerProfileId;
+    displayName: string;
+    avatarUrl?: string;
+    games: number;
+    wins: number;
+    losses: number;
+    ties: number;
+  }>;
+  campaigns: Array<{
+    id: LegacyCampaignId;
+    name: string;
+    status: LegacyCampaignStatus;
+    currentMission: number;
+    completedMissions: number;
+    playerName: string;
+  }>;
 }
 
 export interface PlayerProfileResponse {

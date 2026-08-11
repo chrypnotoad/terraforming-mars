@@ -185,6 +185,14 @@ export class InMemoryDatabase implements IDatabase {
     this.playerClaims.set(claim.participantId, structuredClone(claim));
     return Promise.resolve();
   }
+  unclaimPlayer(participantId: ParticipantId, profileId: PlayerProfileId): Promise<boolean> {
+    const claim = this.playerClaims.get(participantId);
+    if (claim?.profileId !== profileId) {
+      return Promise.resolve(false);
+    }
+    this.playerClaims.delete(participantId);
+    return Promise.resolve(true);
+  }
   getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
     const claim = this.playerClaims.get(participantId);
     return Promise.resolve(claim === undefined ? undefined : structuredClone(claim));

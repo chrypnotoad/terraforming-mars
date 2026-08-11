@@ -103,13 +103,23 @@
             <h3>Players</h3>
             <p>Names can be tied to corporations and mission results later.</p>
           </div>
-          <button type="button" class="secondary-button" :disabled="newPlayerNames.length >= 5" @click="addPlayer">Add player</button>
+          <button type="button" class="secondary-button" :disabled="newPlayers.length >= 5" @click="addPlayer">Add player</button>
         </div>
 
-        <div v-for="(_playerName, index) in newPlayerNames" :key="index" class="player-input-row">
+        <div v-for="(player, index) in newPlayers" :key="index" class="player-input-row">
           <label :for="`player-${index}`">Player {{ index + 1 }}</label>
-          <input :id="`player-${index}`" v-model="newPlayerNames[index]" class="text-input" maxlength="40" :placeholder="`Player ${index + 1} name`" autocomplete="off">
-          <button v-if="newPlayerNames.length > 1" type="button" class="remove-button" :aria-label="`Remove player ${index + 1}`" @click="removePlayer(index)">×</button>
+          <div class="player-field">
+            <img v-if="selectedProfile(player)?.avatarUrl" :src="selectedProfile(player)?.avatarUrl" alt="" class="player-avatar">
+            <input :id="`player-${index}`" v-model="player.name" class="text-input" maxlength="40" :placeholder="`Player ${index + 1} name`" autocomplete="off" @input="unlinkPlayer(player)">
+            <button v-if="newPlayers.length > 1" type="button" class="remove-button" :aria-label="`Remove player ${index + 1}`" @click="removePlayer(index)">×</button>
+          </div>
+          <div v-if="profileMatches(player, index).length > 0" class="profile-options">
+            <button v-for="profile in profileMatches(player, index)" :key="profile.id" type="button" @click="selectPlayerProfile(player, profile)">
+              <img v-if="profile.avatarUrl" :src="profile.avatarUrl" alt="">
+              <span><strong>{{ profile.displayName }}<template v-if="profile.isCurrentUser"> (You)</template></strong><small>@{{ profile.discordUsername }}</small></span>
+            </button>
+          </div>
+          <p v-if="selectedProfile(player)" class="linked-profile">Linked to {{ selectedProfile(player)?.displayName }}’s profile</p>
         </div>
 
         <p v-if="createError" class="form-error">{{ createError }}</p>
@@ -159,8 +169,10 @@ import {
   LegacyCampaignId,
   LegacyCampaignSummary,
 } from '@/common/legacy/LegacyCampaign';
+import {PlayerProfileId, PlayerProfileSummary} from '@/common/profile/PlayerProfile';
 
 type CampaignListResponse = {campaigns: Array<LegacyCampaignSummary>};
+type NewCampaignPlayer = {name: string; profileId?: PlayerProfileId};
 
 export default defineComponent({
   name: 'LegacyCampaignHome',
@@ -174,7 +186,8 @@ export default defineComponent({
       savingCampaign: false,
       createError: '',
       newCampaignName: '',
-      newPlayerNames: ['', ''],
+      newPlayers: [{name: ''}, {name: ''}] as Array<NewCampaignPlayer>,
+      profileDirectory: [] as Array<PlayerProfileSummary>,
       missionCount: LEGACY_CAMPAIGN_MISSION_COUNT,
       expectedDelivery: LEGACY_EXPECTED_DELIVERY,
       gamefoundUrl: LEGACY_GAMEFOUND_URL,
@@ -200,6 +213,38 @@ export default defineComponent({
       } finally {
         this.loading = false;
       }
+    },
+    async loadProfileDirectory(): Promise<void> {
+      try {
+        const response = await fetch(`/${paths.API_PROFILES}`);
+        if (response.ok) {
+          this.profileDirectory = await response.json() as Array<PlayerProfileSummary>;
+        }
+      } catch (_error) {
+        // Profiles remain optional; campaign names can always be entered manually.
+      }
+    },
+    selectedProfile(player: NewCampaignPlayer): PlayerProfileSummary | undefined {
+      return this.profileDirectory.find((profile) => profile.id === player.profileId);
+    },
+    profileMatches(player: NewCampaignPlayer, index: number): Array<PlayerProfileSummary> {
+      if (player.profileId !== undefined || player.name.trim().length < 1) {
+        return [];
+      }
+      const query = player.name.trim().toLocaleLowerCase();
+      const selectedIds = new Set(this.newPlayers.filter((_item, itemIndex) => itemIndex !== index).map((item) => item.profileId));
+      return this.profileDirectory
+        .filter((profile) => !selectedIds.has(profile.id))
+        .filter((profile) => profile.displayName.toLocaleLowerCase().includes(query) || profile.discordUsername.toLocaleLowerCase().includes(query))
+        .sort((a, b) => Number(b.isCurrentUser) - Number(a.isCurrentUser) || a.displayName.localeCompare(b.displayName))
+        .slice(0, 5);
+    },
+    selectPlayerProfile(player: NewCampaignPlayer, profile: PlayerProfileSummary): void {
+      player.name = profile.displayName;
+      player.profileId = profile.id;
+    },
+    unlinkPlayer(player: NewCampaignPlayer): void {
+      delete player.profileId;
     },
     async selectCampaign(campaignId: LegacyCampaignId, updateUrl: boolean = true): Promise<void> {
       this.loading = true;
@@ -232,22 +277,22 @@ export default defineComponent({
       this.createError = '';
     },
     addPlayer(): void {
-      if (this.newPlayerNames.length < 5) {
-        this.newPlayerNames.push('');
+      if (this.newPlayers.length < 5) {
+        this.newPlayers.push({name: ''});
       }
     },
     removePlayer(index: number): void {
-      this.newPlayerNames.splice(index, 1);
+      this.newPlayers.splice(index, 1);
     },
     async createCampaign(): Promise<void> {
       this.createError = '';
       const name = this.newCampaignName.trim();
-      const players = this.newPlayerNames.map((playerName) => playerName.trim());
+      const players = this.newPlayers.map((player) => ({name: player.name.trim(), profileId: player.profileId}));
       if (name.length === 0) {
         this.createError = 'Give the campaign a name.';
         return;
       }
-      if (players.some((playerName) => playerName.length === 0)) {
+      if (players.some((player) => player.name.length === 0)) {
         this.createError = 'Every player needs a name.';
         return;
       }
@@ -256,7 +301,7 @@ export default defineComponent({
         const response = await fetch(`/${paths.API_LEGACY_CAMPAIGNS}`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name, players: players.map((playerName) => ({name: playerName}))}),
+          body: JSON.stringify({name, players}),
         });
         if (!response.ok) {
           const message = await response.text();
@@ -274,7 +319,7 @@ export default defineComponent({
           updatedAt: campaign.updatedAt,
         });
         this.newCampaignName = '';
-        this.newPlayerNames = ['', ''];
+        this.newPlayers = [{name: ''}, {name: ''}];
         this.creatingCampaign = false;
         this.selectedCampaign = campaign;
         window.history.pushState({}, campaign.name, `/${paths.LEGACY_CAMPAIGNS}?id=${campaign.id}`);
@@ -290,6 +335,7 @@ export default defineComponent({
   },
   mounted() {
     this.loadCampaigns();
+    this.loadProfileDirectory();
   },
 });
 </script>
@@ -556,6 +602,16 @@ h3 {
   position: relative;
   margin-bottom: 13px;
 }
+
+.player-field { position: relative; display: flex; align-items: center; gap: 9px; }
+.player-avatar { width: 40px; height: 40px; border: 3px solid #df9b56; border-radius: 50%; object-fit: cover; }
+.profile-options { display: grid; gap: 1px; margin: 4px 38px 10px 0; overflow: hidden; border: 1px solid #4b5664; border-radius: 7px; }
+.profile-options button { display: flex; align-items: center; gap: 9px; border: 0; padding: 8px 10px; color: #fff; background: #171e28; text-align: left; cursor: pointer; }
+.profile-options button:hover { background: #283342; }
+.profile-options img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.profile-options span { display: grid; }
+.profile-options small, .linked-profile { color: #9fa9b4; }
+.linked-profile { margin: 5px 0 0 49px; font-size: 13px; }
 
 .player-input-row .text-input {
   padding-right: 44px;

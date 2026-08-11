@@ -338,6 +338,15 @@ export class LocalFilesystem implements IDatabase {
     writeFileSync(this.playerClaimFilename(claim.participantId), JSON.stringify(claim, null, 2));
   }
 
+  async unclaimPlayer(participantId: ParticipantId, profileId: PlayerProfileId): Promise<boolean> {
+    const claim = await this.getPlayerClaim(participantId);
+    if (claim?.profileId !== profileId) {
+      return false;
+    }
+    unlinkSync(this.playerClaimFilename(participantId));
+    return true;
+  }
+
   getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
     const filename = this.playerClaimFilename(participantId);
     if (!existsSync(filename)) {

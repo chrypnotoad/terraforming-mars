@@ -1,5 +1,6 @@
 import {CreateLegacyCampaignRequest, isLegacyCampaignId, isLegacyCampaignPlayerId, LEGACY_CAMPAIGN_SCHEMA_VERSION, LegacyCampaign, LegacyCampaignPlayer, legacyCampaignToSummary} from '../../common/legacy/LegacyCampaign';
 import {safeCast} from '../../common/Types';
+import {isPlayerProfileId} from '../../common/profile/PlayerProfile';
 import {Database} from '../database/Database';
 import {IDatabase} from '../database/IDatabase';
 import {Request} from '../Request';
@@ -40,7 +41,10 @@ function parseCreateRequest(value: unknown): CreateLegacyCampaignRequest {
     if (playerName.length === 0 || playerName.length > MAX_PLAYER_NAME_LENGTH) {
       throw new InvalidCampaignRequestError(`Player names must be between 1 and ${MAX_PLAYER_NAME_LENGTH} characters`);
     }
-    return {name: playerName};
+    if (player.profileId !== undefined && !isPlayerProfileId(player.profileId)) {
+      throw new InvalidCampaignRequestError('Invalid player profile');
+    }
+    return {name: playerName, profileId: player.profileId};
   });
 
   const normalizedNames = new Set(players.map((player) => player.name.toLocaleLowerCase()));
@@ -94,10 +98,24 @@ export class ApiLegacyCampaigns extends Handler {
             return;
           }
           const request = parseCreateRequest(JSON.parse(body));
+          const linkedProfileIds = request.players.flatMap((player) => player.profileId === undefined ? [] : [player.profileId]);
+          if (new Set(linkedProfileIds).size !== linkedProfileIds.length) {
+            throw new InvalidCampaignRequestError('A profile can only appear once in a campaign');
+          }
+          if (linkedProfileIds.length > 0 && ctx.user === undefined) {
+            responses.notAuthorized(req, res);
+            return;
+          }
+          for (const profileId of linkedProfileIds) {
+            if (await this.database.getPlayerProfile(profileId) === undefined) {
+              throw new InvalidCampaignRequestError('A selected player profile no longer exists');
+            }
+          }
           const now = new Date(ctx.clock.now()).toISOString();
           const players: Array<LegacyCampaignPlayer> = request.players.map((player) => ({
             id: safeCast(generateRandomId('lp'), isLegacyCampaignPlayerId),
             name: player.name,
+            profileId: player.profileId,
             titlePoints: 0,
             nextMissionBonusMegacredits: 0,
             savedCards: [],

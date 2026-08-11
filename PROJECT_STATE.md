@@ -1,6 +1,6 @@
 # Project State
 
-Updated: 2026-08-09
+Updated: 2026-08-10
 
 ## Repository
 
@@ -81,6 +81,14 @@ https://gamefound.com/en/projects/stronghold-games/terraforming-mars-the-legacy-
 - Added profile/result persistence across SQLite, PostgreSQL, filesystem, and
   in-memory adapters. The SQLite migration and avatar data remain covered by
   the existing whole-database backups.
+- Added safe per-game profile unlinking, head-to-head win/loss/tie aggregation,
+  linked Legacy campaign history, and optional profile selection when creating
+  a campaign roster. Removing a claim never deletes or changes the game.
+- Implemented the minimum one-channel Discord bot flow: a signed-in profile can
+  post a rich game invitation from `/game`, with a link button, same-origin
+  protection, per-user rate limiting, 30-second duplicate suppression, and no
+  Gateway or message-reading access. The UI remains hidden until the bot token
+  and channel ID are configured.
 
 ## Verification status
 
@@ -109,6 +117,12 @@ The following checks passed for the current changes:
   global CSS generation passed; Webpack emitted only its existing size warnings.
 - Production client build completed with only the existing bundle-size
   warnings; server/client lint and server build passed.
+- Profile/head-to-head/campaign/unclaim and Discord route tests: 15 passing.
+- Profile, campaign, and game-home client tests: 4 passing.
+- Full server suite after these changes: 7,160 passing.
+- Full client suite after these changes: 446 passing.
+- Server/client lint and production server/client builds passed after the new
+  work; Webpack emitted only its existing bundle-size warnings.
 - `npm run build:server` and `npm run lint:server` after the retention and
   backup changes.
 - Live backup validation (2026-08-09): `PRAGMA integrity_check` returned `ok`;
@@ -165,15 +179,14 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
   player avatar. Focused client tests and client/CSS lint passed; production
   client/CSS builds were redeployed and the four affected Cloudflare cache
   entries were purged successfully.
+- Live Discord posting is waiting for the bot token plus test guild/channel IDs
+  to be added to the ignored `.env` and for the bot to be installed in that
+  test server.
 
 ## Current blockers
 
 - Official Legacy mission-specific content is incomplete/unavailable in the
   repository.
-- Later work should be committed and pushed so other checkouts can recover it
-  from Git.
-- The retention, backup, documentation, and runtime-hardening source changes
-  are currently deployed locally but not yet committed or pushed.
 - Discord settings and the production client have been rebuilt. Human OAuth,
   profile editing, and custom avatar upload are verified. The post-login backup
   passed integrity validation and contains the same profile count as the live
@@ -186,9 +199,11 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
    guest names, and spectator-host creation on the deployed New Game page.
 2. Create the next real game using selected profiles and confirm its completed
    results appear in My Profile.
-3. Implement the scoped `Post to Discord` backlog item after a server admin is
-   available for the one-time bot installation.
-4. Add profile unlink plus campaign and head-to-head profile views.
+3. Configure/install the minimal Discord bot in the test server, restart the
+   app, and verify one real invitation plus duplicate/error feedback.
+4. Decide how account-level Discord unlink should work before adding it:
+   Discord is currently the only login/recovery method. Per-game unlinking is
+   already safe and implemented.
 5. Recheck the Gamefound campaign and publisher updates on 2027-03-01.
 
 ## Source of truth

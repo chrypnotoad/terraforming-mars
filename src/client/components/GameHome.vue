@@ -19,6 +19,14 @@
       </li>
     </ul>
 
+    <div v-if="discordPostConfigured" class="discord-invite">
+      <AppButton title="Post game to Discord" :disabled="postingToDiscord" @click="postToDiscord"/>
+      <span v-if="discordPostMessage" class="discord-invite-status">
+        {{ discordPostMessage }}
+        <a v-if="discordMessageUrl" :href="discordMessageUrl" target="_blank" rel="noopener noreferrer">View message ↗</a>
+      </span>
+    </div>
+
     <div class="spacing-setup"></div>
 
     <PurgeWarning :expectedPurgeTimeMs="game.expectedPurgeTimeMs"/>
@@ -43,6 +51,8 @@ import {ParticipantId} from '@/common/Types';
 import {Color} from '@/common/Color';
 import {playerSymbol} from '@/client/utils/playerSymbol';
 import {setDocumentTitle} from '../utils/documentTitle';
+import {paths} from '@/common/app/paths';
+import rawSettings from '@/genfiles/settings.json';
 
 // taken from https://stackoverflow.com/a/46215202/83336
 // The solution to copying to the clipboard in this case is
@@ -78,6 +88,10 @@ export default defineComponent({
     return {
       // Variable to keep the state for the current copied player id. Used to display message of which button and which player playable link is currently in the clipboard
       urlCopiedPlayerId: DEFAULT_COPIED_PLAYER_ID,
+      discordPostConfigured: rawSettings.discordPostConfigured,
+      postingToDiscord: false,
+      discordPostMessage: '',
+      discordMessageUrl: '',
     };
   },
   methods: {
@@ -121,6 +135,36 @@ export default defineComponent({
     isPlayerUrlCopied(playerId: string): boolean {
       return playerId === this.urlCopiedPlayerId;
     },
+    async postToDiscord(): Promise<void> {
+      this.postingToDiscord = true;
+      this.discordPostMessage = '';
+      this.discordMessageUrl = '';
+      try {
+        const response = await fetch(`/${paths.API_DISCORD_INVITE}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({gameId: this.game.id}),
+        });
+        if (response.status === 403) {
+          this.discordPostMessage = 'Sign in from My Profile, then try again.';
+          return;
+        }
+        if (response.status === 429) {
+          this.discordPostMessage = 'That game was just posted. Give it a few seconds.';
+          return;
+        }
+        if (!response.ok) {
+          throw new Error('Discord could not receive the game link.');
+        }
+        const result = await response.json() as {messageUrl?: string};
+        this.discordPostMessage = 'Posted to Discord.';
+        this.discordMessageUrl = result.messageUrl ?? '';
+      } catch (error) {
+        this.discordPostMessage = error instanceof Error ? error.message : 'Discord could not receive the game link.';
+      } finally {
+        this.postingToDiscord = false;
+      }
+    },
     playerSymbol(color: Color) {
       return playerSymbol(color);
     },
@@ -134,3 +178,8 @@ export default defineComponent({
 
 </script>
 
+<style scoped>
+.discord-invite { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+.discord-invite-status { color: #ddd; }
+.discord-invite-status a { margin-left: 8px; color: #f2b45f; }
+</style>

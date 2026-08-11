@@ -83,10 +83,36 @@
         <h2>Game history</h2>
         <p v-if="response.stats.games.length === 0" class="empty-state">Your claimed completed games will appear here.</p>
         <div v-else class="game-history">
-          <a v-for="game in response.stats.games" :key="game.gameId" :href="`/game?id=${game.gameId}`" class="game-row">
-            <span><strong>{{ game.playerName }}</strong> · {{ game.corporation }}</span>
-            <span>{{ game.won ? 'Won' : `Place ${game.rank ?? '—'}` }} · {{ game.playerScore }} VP · Gen {{ game.generations }}</span>
-          </a>
+          <div v-for="game in response.stats.games" :key="game.gameId" class="game-row">
+            <a :href="`/game?id=${game.gameId}`" class="game-link">
+              <span><strong>{{ game.playerName }}</strong> · {{ game.corporation }}</span>
+              <span>{{ game.won ? 'Won' : `Place ${game.rank ?? '—'}` }} · {{ game.playerScore }} VP · Gen {{ game.generations }}</span>
+            </a>
+            <button type="button" class="text-button unclaim-button" @click="unclaimGame(game.participantId)">Remove</button>
+          </div>
+        </div>
+      </section>
+      <section class="profile-grid">
+        <div class="profile-panel">
+          <h2>Head to head</h2>
+          <p v-if="response.stats.headToHead.length === 0" class="empty-state">Results against other linked profiles will appear here.</p>
+          <div v-else class="opponent-list">
+            <div v-for="opponent in response.stats.headToHead" :key="opponent.profileId" class="opponent-row">
+              <img v-if="opponent.avatarUrl" :src="opponent.avatarUrl" alt="" class="opponent-avatar">
+              <span><strong>{{ opponent.displayName }}</strong><small>{{ opponent.games }} games</small></span>
+              <span>{{ opponent.wins }}–{{ opponent.losses }}–{{ opponent.ties }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile-panel">
+          <h2>Campaigns</h2>
+          <p v-if="response.stats.campaigns.length === 0" class="empty-state">Linked Legacy campaigns will appear here.</p>
+          <div v-else class="campaign-history">
+            <a v-for="campaign in response.stats.campaigns" :key="campaign.id" :href="`/legacy?id=${campaign.id}`">
+              <strong>{{ campaign.name }}</strong>
+              <span>{{ campaign.playerName }} · Mission {{ campaign.currentMission }} · {{ campaign.status }}</span>
+            </a>
+          </div>
         </div>
       </section>
       <p class="logout"><a href="/api/logout">Log out</a></p>
@@ -255,6 +281,22 @@ export default defineComponent({
         this.saving = false;
       }
     },
+    async unclaimGame(participantId: string | undefined): Promise<void> {
+      if (participantId === undefined || !window.confirm('Remove this player and game from your profile history? The game itself will not be deleted.')) {
+        return;
+      }
+      const result = await fetch(`/${paths.API_PROFILE_CLAIM}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({participantId, action: 'unclaim'}),
+      });
+      if (!result.ok) {
+        this.claimMessage = 'That game could not be removed from your profile.';
+        return;
+      }
+      this.response = await result.json() as PlayerProfileResponse;
+      this.claimMessage = 'Game removed from your profile. The game itself is unchanged.';
+    },
     formatPercent(value: number): string {
       return `${Math.round(value * 100)}%`;
     },
@@ -303,10 +345,18 @@ th, td { padding: 8px; border-bottom: 1px solid #3e3b38; text-align: left; }
 .alias-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .alias-list span { border-radius: 999px; background: #342c27; padding: 7px 11px; }
 .game-history { display: grid; gap: 8px; }
-.game-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px; border-radius: 8px; background: #1a1e28; text-decoration: none; color: #eee; }
+.game-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; background: #1a1e28; }
+.game-link { display: flex; flex: 1; justify-content: space-between; gap: 16px; text-decoration: none; color: #eee; }
+.unclaim-button { flex: none; }
+.opponent-list, .campaign-history { display: grid; gap: 8px; }
+.opponent-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 8px; background: #1a1e28; }
+.opponent-row span { display: grid; }
+.opponent-row small, .campaign-history span { color: #aaa; }
+.opponent-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.campaign-history a { display: grid; gap: 3px; padding: 10px; border-radius: 8px; background: #1a1e28; text-decoration: none; }
 .claim-message { padding: 12px; border-radius: 8px; background: #234c34; }
 .error-message { color: #ff9a87; }
 .logout { text-align: center; }
 @media (max-width: 800px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .profile-grid { grid-template-columns: 1fr; } .profile-header { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .identity-panel { align-items: center; flex-direction: column; } .identity-form { width: 100%; } .game-row { flex-direction: column; } }
+@media (max-width: 560px) { .identity-panel { align-items: center; flex-direction: column; } .identity-form { width: 100%; } .game-row, .game-link { align-items: flex-start; flex-direction: column; } }
 </style>

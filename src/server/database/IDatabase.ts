@@ -142,6 +142,7 @@ export interface IDatabase {
     listPlayerProfiles(): Promise<Array<PlayerProfile>>;
     savePlayerProfile(profile: PlayerProfile): Promise<void>;
     claimPlayer(claim: PlayerClaim): Promise<void>;
+    unclaimPlayer(participantId: ParticipantId, profileId: PlayerProfileId): Promise<boolean>;
     getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined>;
     listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>>;
     listCompletedGameResults(): Promise<Array<CompletedGameResult>>;

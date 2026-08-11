@@ -623,6 +623,13 @@ export class PostgreSQL implements IDatabase {
       [claim.participantId, claim.gameId, claim.profileId, claim.claimedAt]);
   }
 
+  public async unclaimPlayer(participantId: ParticipantId, profileId: PlayerProfileId): Promise<boolean> {
+    const result = await this.client.query(
+      'DELETE FROM player_claim WHERE participant_id = $1 AND profile_id = $2',
+      [participantId, profileId]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   public async getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
     const result = await this.client.query(
       'SELECT participant_id, game_id, profile_id, claimed_time FROM player_claim WHERE participant_id = $1',

@@ -14,7 +14,8 @@ update the status as work moves between devices or Codex tasks.
 
 ## Next
 
-- [ ] **Post game invitations to Discord from the game page.** Preserve the
+- [ ] **Post game invitations to Discord from the game page (implementation
+  complete; live bot installation/QA remains).** Preserve the
   current flow and shared `/game?id=...` URL: after creating a game, the host
   can click `Post to Discord` instead of copying and pasting the URL manually.
   Keep `Copy game link` available for account-free play and as a fallback.
@@ -25,18 +26,18 @@ update the status as work moves between devices or Codex tasks.
     presence, or privileged gateway permissions.
   - Store the bot token as a server secret and configure one guild/channel ID
     initially; channel-selection UI and multi-server support are out of scope.
-  - Add an authenticated, CSRF-protected, rate-limited server endpoint that
+  - [x] Add an authenticated, same-origin, rate-limited server endpoint that
     validates the game exists before the bot posts. Require a linked Discord
     profile to use the button; invited players still need no account.
-  - Post a minimal rich invitation containing the game summary, creator when
+  - [x] Post a minimal rich invitation containing the game summary, creator when
     available, and an `Open Game` link button pointing to the existing game URL.
     Do not add a new lobby, join token, or seat-claim flow.
-  - Show clear posted/error feedback without navigating away, prevent rapid
+  - [x] Show clear posted/error feedback without navigating away, prevent rapid
     duplicate posts, and retain a manual retry/copy-link path.
-  - Test authorization, CSRF, rate limiting, missing games, Discord API
+  - [x] Test authorization, CSRF, rate limiting, missing games, Discord API
     failures, duplicate suppression, and the unchanged copy/paste flow.
-- [ ] **Optional player profiles and lifetime statistics (implementation in
-  progress; Discord credentials and live OAuth QA remain).** Preserve the
+- [ ] **Optional player profiles and lifetime statistics (implementation
+  largely complete; account-level Discord unlink remains).** Preserve the
   account-free flow: hosts can still enter arbitrary player names and share
   player links, and nobody must sign in to play.
   - [x] Add durable profiles with a preferred name, optional Discord identity,
@@ -50,11 +51,11 @@ update the status as work moves between devices or Codex tasks.
   - [x] Add an optional preferred player color to profiles. Apply it when a
     profile is selected, let earlier players keep conflicts, and fall back to
     the existing first-available color order. Manual colors remain per-game.
-  - [ ] Add a `My Profile` page with game history, campaigns, wins, win rate,
+  - [x] Add a `My Profile` page with game history, campaigns, wins, win rate,
     average/high score, corporation usage/results, head-to-head records, and a
     playful nickname history.
-    The profile, history, win/score, corporation, and alias views are complete;
-    campaign and head-to-head views remain.
+    Profile history, win/score, corporation, alias, linked campaign, and
+    head-to-head win/loss/tie views are complete.
   - [x] Record participant-level completed-game results with nullable profile ID,
     exact game nickname, corporation, score, rank/tie outcome, generation, and
     relevant game options. Do not rely on the current score-only result rows.
@@ -65,13 +66,14 @@ update the status as work moves between devices or Codex tasks.
     session expiry, logout/unlink support, and no bot or Discord-server install.
     The identify-only flow, credentials, state validation, secure cookies,
     failure-path tests, and a live OAuth round trip are complete; unlink remains.
-  - Link Legacy campaign participants to profiles optionally while preserving
+  - [x] Link Legacy campaign participants to profiles optionally while preserving
     campaign-specific names and account-free campaigns.
   - [ ] Add migrations plus tests for profile isolation, claims, aliases, result
     capture, ties, guest play, avatar validation, OAuth failure, and save/reload.
     Core migration, persistence, claim, guest, avatar, aggregation, OAuth
     failure, profile-directory, creation-association, and preferred-color
-    coverage is complete; add explicit tie and full browser-flow tests.
+    coverage and explicit head-to-head tie tests are complete; add a full
+    browser-flow test.
 - [ ] Verify which official Mission 1 materials are available and record their
   source URLs/files in the assessment.
 - [ ] Define the Mission 1 data manifest: board, briefing, global parameters,

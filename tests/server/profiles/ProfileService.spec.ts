@@ -3,6 +3,7 @@ import {GameOptions} from '../../../src/server/game/GameOptions';
 import {ProfileService} from '../../../src/server/profiles/ProfileService';
 import {DiscordUser} from '../../../src/server/server/auth/discord';
 import {InMemoryDatabase} from '../../testing/InMemoryDatabase';
+import {LEGACY_CAMPAIGN_SCHEMA_VERSION, LegacyCampaign} from '../../../src/common/legacy/LegacyCampaign';
 
 describe('ProfileService', () => {
   const user: DiscordUser = {
@@ -43,5 +44,44 @@ describe('ProfileService', () => {
     expect(response.stats.averageScore).eq(101);
     expect(response.stats.favoriteCorporation).eq('Credicor');
     expect(response.stats.aliases).deep.eq(['Rock']);
+  });
+
+  it('tracks ties head to head and linked campaign history', async () => {
+    const database = new InMemoryDatabase();
+    const service = new ProfileService(database);
+    const profile = await service.getOrCreate(user);
+    const opponent = await service.getOrCreate({...user, id: 'discord-456', username: 'morty-account', global_name: 'Morty'});
+    await database.claimPlayer({participantId: 'p-rick', gameId: 'g-tie', profileId: profile.id, claimedAt: '2026-08-09T12:00:00Z'});
+    await database.claimPlayer({participantId: 'p-morty', gameId: 'g-tie', profileId: opponent.id, claimedAt: '2026-08-09T12:00:00Z'});
+    database.saveGameResults('g-tie', 2, 9, {} as GameOptions, [
+      {participantId: 'p-rick', playerName: 'Rick', corporation: 'Credicor', playerScore: 100, rank: 1},
+      {participantId: 'p-morty', playerName: 'Morty', corporation: 'Helion', playerScore: 100, rank: 1},
+    ]);
+    await database.createLegacyCampaign({
+      schemaVersion: LEGACY_CAMPAIGN_SCHEMA_VERSION,
+      id: 'c1',
+      name: 'Friday Crew',
+      status: 'planning',
+      currentMission: 1,
+      players: [{id: 'lp1', name: 'Rock', profileId: profile.id, titlePoints: 0, nextMissionBonusMegacredits: 0, savedCards: [], developments: []}],
+      linkedGameIds: [],
+      missionHistory: [],
+      createdAt: '2026-08-09T12:00:00Z',
+      updatedAt: '2026-08-09T12:00:00Z',
+    } as LegacyCampaign);
+
+    const stats = await service.getStats(profile);
+    expect(stats.headToHead).deep.include({
+      profileId: opponent.id,
+      displayName: 'Morty',
+      avatarUrl: opponent.discordAvatarUrl,
+      games: 1,
+      wins: 0,
+      losses: 0,
+      ties: 1,
+    });
+    expect(stats.campaigns).deep.include({
+      id: 'c1', name: 'Friday Crew', status: 'planning', currentMission: 1, completedMissions: 0, playerName: 'Rock',
+    });
   });
 });
