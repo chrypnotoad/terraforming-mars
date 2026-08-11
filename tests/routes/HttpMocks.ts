@@ -20,11 +20,11 @@ export class MockRequest implements Request {
 }
 
 export class MockResponse implements Response {
-  public headers: Map<string, string> = new Map();
+  public headers: Map<string, number | string | ReadonlyArray<string>> = new Map();
   public content = '';
   public statusCode = 200;
 
-  public setHeader(key: string, value: string): http.ServerResponse {
+  public setHeader(key: string, value: number | string | ReadonlyArray<string>): http.ServerResponse {
     this.headers.set(key, value);
     return this as unknown as http.ServerResponse;
   }
@@ -37,8 +37,15 @@ export class MockResponse implements Response {
       this.content += content;
     }
   }
-  public writeHead(statusCode: number): http.ServerResponse {
+  public writeHead(statusCode: number, headers?: http.OutgoingHttpHeaders): http.ServerResponse {
     this.statusCode = statusCode;
+    if (headers !== undefined) {
+      Object.entries(headers).forEach(([key, value]) => {
+        if (value !== undefined) {
+          this.headers.set(key, value);
+        }
+      });
+    }
     return this as unknown as http.ServerResponse;
   }
   public getHeader(name: string): number | string | string[] | undefined {

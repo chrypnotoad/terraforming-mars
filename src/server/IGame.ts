@@ -11,7 +11,7 @@ import {LogMessageBuilder} from './logs/LogMessageBuilder';
 import {LogMessage} from '../common/logs/LogMessage';
 import {Phase} from '../common/Phase';
 import {IPlayer} from './IPlayer';
-import {PlayerId, GameId, SpectatorId, SpaceId, isGameId} from '../common/Types';
+import {PlayerId, GameId, ParticipantId, SpectatorId, SpaceId, isGameId} from '../common/Types';
 import {AndThen, DeferredAction} from './deferredActions/DeferredAction';
 import {Priority} from './deferredActions/Priority';
 import {DeferredActionsQueue} from './deferredActions/DeferredActionsQueue';
@@ -37,6 +37,10 @@ import {IStandardProjectCard} from './cards/IStandardProjectCard';
 export interface Score {
   corporation: String;
   playerScore: number;
+  participantId?: ParticipantId;
+  playerName?: string;
+  megaCredits?: number;
+  rank?: number;
 }
 
 export interface IGame extends Logger {

@@ -8,10 +8,12 @@ import {GameOptions} from '../game/GameOptions';
 import {GameId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {daysAgoToSeconds} from './utils';
+import {getPurgeGameDaysForMaintenance} from './GameRetention';
 import {MultiMap} from 'mnemonist';
 import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
+import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
 
 export const IN_MEMORY_SQLITE_PATH = ':memory:';
 
@@ -66,6 +68,27 @@ export class SQLite implements IDatabase {
         updated_time timestamp not null default (strftime('%s', 'now')),
         PRIMARY KEY (campaign_id)
       )`);
+    await this.asyncRun(
+      `CREATE TABLE IF NOT EXISTS player_profile(
+        profile_id varchar not null,
+        discord_id varchar not null unique,
+        data text not null,
+        created_time timestamp not null default (strftime('%s', 'now')),
+        updated_time timestamp not null default (strftime('%s', 'now')),
+        PRIMARY KEY (profile_id)
+      )`);
+    await this.asyncRun(
+      `CREATE TABLE IF NOT EXISTS player_claim(
+        participant_id varchar not null,
+        game_id varchar not null,
+        profile_id varchar not null,
+        claimed_time timestamp not null default (strftime('%s', 'now')),
+        PRIMARY KEY (participant_id)
+      )`);
+    const resultColumns = await this.asyncAll('PRAGMA table_info(game_results)');
+    if (!resultColumns.some((column) => column.name === 'completed_time')) {
+      await this.asyncRun('ALTER TABLE game_results ADD COLUMN completed_time timestamp');
+    }
   }
 
   public async getPlayerCount(gameId: GameId): Promise<number> {
@@ -86,8 +109,8 @@ export class SQLite implements IDatabase {
   saveGameResults(gameId: GameId, players: number, generations: number, gameOptions: GameOptions, scores: Array<Score>): void {
     try {
       this.db.prepare(
-        'INSERT INTO game_results (game_id, seed_game_id, players, generations, game_options, scores) VALUES(?, ?, ?, ?, ?, ?)',
-      ).run([gameId, gameOptions.clonedGamedId, players, generations, JSON.stringify(gameOptions), JSON.stringify(scores)]);
+        'INSERT INTO game_results (game_id, seed_game_id, players, generations, game_options, scores, completed_time) VALUES(?, ?, ?, ?, ?, ?, ?)',
+      ).run([gameId, gameOptions.clonedGamedId, players, generations, JSON.stringify(gameOptions), JSON.stringify(scores), Date.now()]);
     } catch (err) {
       console.error('SQLite:saveGameResults', err);
       throw err;
@@ -148,10 +171,11 @@ export class SQLite implements IDatabase {
   }
 
 
-  async purgeUnfinishedGames(maxGameDays: string | undefined = process.env.MAX_GAME_DAYS): Promise<Array<GameId>> {
-    // Purge unfinished games older than MAX_GAME_DAYS days. If this .env variable is not present, unfinished games will not be purged.
-    if (maxGameDays !== undefined) {
-      const dateToSeconds = daysAgoToSeconds(maxGameDays, 0);
+  async purgeUnfinishedGames(maxGameDays?: string): Promise<Array<GameId>> {
+    const retentionDays = getPurgeGameDaysForMaintenance(maxGameDays);
+    // Purge unfinished games only when MAX_GAME_DAYS is explicitly configured.
+    if (retentionDays !== undefined) {
+      const dateToSeconds = daysAgoToSeconds(String(retentionDays), 0);
       const selectResult = await this.asyncAll('SELECT DISTINCT game_id game_id FROM games WHERE created_time < ? and status = \'running\'', [dateToSeconds]);
       let gameIds = selectResult.map((row) => row.game_id);
       if (gameIds.length > 1000) {
@@ -287,6 +311,87 @@ export class SQLite implements IDatabase {
         expirationTimeMillis: row.expiration_time * 1000,
       };
     });
+  }
+
+  public async createPlayerProfile(profile: PlayerProfile): Promise<void> {
+    await this.asyncRun(
+      'INSERT INTO player_profile (profile_id, discord_id, data, created_time, updated_time) VALUES (?, ?, ?, ?, ?)',
+      [profile.id, profile.discordId, JSON.stringify(profile), profile.createdAt, profile.updatedAt]);
+  }
+
+  public async getPlayerProfile(profileId: PlayerProfileId): Promise<PlayerProfile | undefined> {
+    const row = await this.asyncGet('SELECT data FROM player_profile WHERE profile_id = ?', [profileId]);
+    return row === undefined ? undefined : JSON.parse(row.data) as PlayerProfile;
+  }
+
+  public async getPlayerProfileByDiscordId(discordId: string): Promise<PlayerProfile | undefined> {
+    const row = await this.asyncGet('SELECT data FROM player_profile WHERE discord_id = ?', [discordId]);
+    return row === undefined ? undefined : JSON.parse(row.data) as PlayerProfile;
+  }
+
+  public async listPlayerProfiles(): Promise<Array<PlayerProfile>> {
+    const rows = await this.asyncAll('SELECT data FROM player_profile ORDER BY updated_time DESC');
+    return rows.map((row) => JSON.parse(row.data) as PlayerProfile);
+  }
+
+  public async savePlayerProfile(profile: PlayerProfile): Promise<void> {
+    const result = await this.asyncRun(
+      'UPDATE player_profile SET discord_id = ?, data = ?, updated_time = ? WHERE profile_id = ?',
+      [profile.discordId, JSON.stringify(profile), profile.updatedAt, profile.id]);
+    if (result.changes === 0) {
+      throw new Error(`Player profile ${profile.id} not found`);
+    }
+  }
+
+  public async claimPlayer(claim: PlayerClaim): Promise<void> {
+    const existing = await this.getPlayerClaim(claim.participantId);
+    if (existing !== undefined && existing.profileId !== claim.profileId) {
+      throw new Error('This player has already been claimed by another profile');
+    }
+    await this.asyncRun(
+      `INSERT INTO player_claim (participant_id, game_id, profile_id, claimed_time)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (participant_id) DO UPDATE SET profile_id = excluded.profile_id, claimed_time = excluded.claimed_time`,
+      [claim.participantId, claim.gameId, claim.profileId, claim.claimedAt]);
+  }
+
+  public async getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
+    const row = await this.asyncGet(
+      'SELECT participant_id, game_id, profile_id, claimed_time FROM player_claim WHERE participant_id = ?',
+      [participantId]);
+    if (row === undefined) {
+      return undefined;
+    }
+    return {
+      participantId: row.participant_id,
+      gameId: row.game_id,
+      profileId: row.profile_id,
+      claimedAt: typeof row.claimed_time === 'number' ? new Date(row.claimed_time).toISOString() : String(row.claimed_time),
+    };
+  }
+
+  public async listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>> {
+    const rows = await this.asyncAll(
+      'SELECT participant_id, game_id, profile_id, claimed_time FROM player_claim WHERE profile_id = ? ORDER BY claimed_time DESC',
+      [profileId]);
+    return rows.map((row) => ({
+      participantId: row.participant_id,
+      gameId: row.game_id,
+      profileId: row.profile_id,
+      claimedAt: typeof row.claimed_time === 'number' ? new Date(row.claimed_time).toISOString() : String(row.claimed_time),
+    }));
+  }
+
+  public async listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
+    const rows = await this.asyncAll(
+      'SELECT game_id, generations, game_options, scores, completed_time FROM game_results ORDER BY completed_time DESC');
+    return rows.map((row) => ({
+      gameId: row.game_id,
+      generations: row.generations,
+      completedAt: row.completed_time === null ? '' : new Date(Number(row.completed_time)).toISOString(),
+      gameOptions: JSON.parse(row.game_options),
+      scores: JSON.parse(row.scores),
+    }));
   }
 
   public async createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

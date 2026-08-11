@@ -7,6 +7,7 @@ import {RandomMAOptionType} from '../ma/RandomMAOptionType';
 import {AgendaStyle} from '../turmoil/Types';
 import {GameId} from '../Types';
 import {Expansion} from '../cards/GameModule';
+import {PlayerProfileId} from '../profile/PlayerProfile';
 
 export type BoardNameType = BoardName | RandomBoardOption;
 
@@ -16,6 +17,7 @@ export interface NewPlayerModel {
   beginner: boolean;
   handicap: number;
   first: boolean;
+  profileId?: PlayerProfileId;
 }
 
 export type EscapeVelocityOptions = {

@@ -1,5 +1,6 @@
 <template>
 <div class="start-screen">
+  <a class="profile-corner-link" href="/profile">My profile</a>
   <div v-i18n class="start-screen-links">
     <div class="start-screen-header start-screen-link--title">
       <div class="start-screen-title-top">TERRAFORMING</div>
@@ -64,3 +65,17 @@ export default defineComponent({
 });
 
 </script>
+
+<style scoped>
+.profile-corner-link {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  z-index: 2;
+  color: #f1c27a;
+  font-size: 16px;
+  text-decoration: none;
+  text-shadow: 0 1px 3px #000;
+}
+.profile-corner-link:hover { text-decoration: underline; }
+</style>

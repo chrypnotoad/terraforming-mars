@@ -42,6 +42,11 @@ describe('CreateGameSettingsStorage', () => {
     expect(warnings[0][0]).eq('Unable to load create game settings:');
   });
 
+  it('does not persist profile associations', () => {
+    storage.saveSettings({players: [{name: 'Rick', color: 'blue', profileId: 'u1'}]});
+    expect(storage.loadSettings()?.players).deep.eq([{name: 'Rick', color: 'blue'}]);
+  });
+
   it('clears saved settings', () => {
     storage.saveSettings({
       players: [{name: 'Alice', color: 'red', beginner: false, handicap: 0}],

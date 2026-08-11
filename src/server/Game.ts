@@ -62,7 +62,7 @@ import {GameLoader} from './database/GameLoader';
 import {DEFAULT_GAME_OPTIONS, GameOptions} from './game/GameOptions';
 import {CorporationDeck, PreludeDeck, ProjectDeck, CeoDeck} from './cards/Deck';
 import {Logger} from './logs/Logger';
-import {addDays, stringToNumber} from './database/utils';
+import {getExpectedPurgeTimeMs} from './database/GameRetention';
 import {Tag} from '../common/cards/Tag';
 import {IGame, Score} from './IGame';
 import {MarsBoard} from './boards/MarsBoard';
@@ -1117,7 +1117,18 @@ export class Game implements IGame, Logger {
     this.players.forEach((player) => {
       const corporation = player.playedCards.filter(isICorporationCard).map(toName).join('|');
       const vpb = player.getVictoryPoints();
-      scores.push({corporation: corporation, playerScore: vpb.total});
+      scores.push({
+        corporation: corporation,
+        playerScore: vpb.total,
+        participantId: player.id,
+        playerName: player.name,
+        megaCredits: player.megaCredits,
+      });
+    });
+    scores.forEach((score) => {
+      score.rank = 1 + scores.filter((other) =>
+        other.playerScore > score.playerScore ||
+        (other.playerScore === score.playerScore && (other.megaCredits ?? 0) > (score.megaCredits ?? 0))).length;
     });
 
     Database.getInstance().saveGameResults(this.id, this.players.length, this.generation, this.gameOptions, scores);
@@ -1690,11 +1701,7 @@ export class Game implements IGame, Logger {
   }
 
   public expectedPurgeTimeMs(): number {
-    if (this.createdTime.getTime() === 0) {
-      return 0;
-    }
-    const days = stringToNumber(process.env.MAX_GAME_DAYS, 10);
-    return addDays(this.createdTime, days).getTime();
+    return getExpectedPurgeTimeMs(this.createdTime);
   }
 
   public static deserialize(d: SerializedGame): Game {

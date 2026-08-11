@@ -33,7 +33,7 @@
 - The production server caches compressed frontend assets in memory. After
   rebuilding client JavaScript or CSS, restart only
   `com.chrypnotoad.terraforming-mars-legacy` before checking the public tunnel;
-  do not restart the Quick Tunnel unless its URL may change.
+  do not restart the named tunnel for ordinary application deployments.
 - For persistence or API changes, cover isolation, save/reload, validation,
   and missing-record behavior.
 - In the final handoff, record the commands that were actually run and any

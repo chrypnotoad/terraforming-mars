@@ -6,12 +6,16 @@ import {GameId, ParticipantId} from '../../src/common/Types';
 import {Session, SessionId} from '../../src/server/auth/Session';
 import {Clock} from '../../src/common/Timer';
 import {LegacyCampaign, LegacyCampaignId} from '../../src/common/legacy/LegacyCampaign';
+import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../src/common/profile/PlayerProfile';
 
 export class InMemoryDatabase implements IDatabase {
   public games: Map<GameId, Array<SerializedGame | undefined>> = new Map();
   protected completedGames: Map<GameId, Date> = new Map();
   protected sessions: Map<SessionId, Session> = new Map();
   protected legacyCampaigns: Map<LegacyCampaignId, LegacyCampaign> = new Map();
+  protected playerProfiles: Map<PlayerProfileId, PlayerProfile> = new Map();
+  protected playerClaims: Map<ParticipantId, PlayerClaim> = new Map();
+  protected gameResults: Array<CompletedGameResult> = [];
   private clock: Clock;
 
   constructor(clock: Clock = new Clock()) {
@@ -78,8 +82,14 @@ export class InMemoryDatabase implements IDatabase {
     game.lastSaveId++;
     return Promise.resolve();
   }
-  saveGameResults(_gameId: GameId, _players: number, _generations: number, _gameOptions: GameOptions, _scores: Score[]): void {
-    throw new Error('Method not implemented.');
+  saveGameResults(gameId: GameId, _players: number, generations: number, gameOptions: GameOptions, scores: Score[]): void {
+    this.gameResults.push({
+      gameId,
+      generations,
+      completedAt: new Date(this.clock.now()).toISOString(),
+      gameOptions: structuredClone(gameOptions),
+      scores: structuredClone(scores).map((score) => ({...score, corporation: String(score.corporation)})),
+    });
   }
   loadCloneableGame(gameId: GameId): Promise<SerializedGame> {
     return this.getGameVersion(gameId, 0);
@@ -140,6 +150,52 @@ export class InMemoryDatabase implements IDatabase {
   getSessions(): Promise<Array<Session>> {
     const now = this.clock.now();
     return Promise.resolve(Array.from(this.sessions.values()).filter((e) => e.expirationTimeMillis > now));
+  }
+  createPlayerProfile(profile: PlayerProfile): Promise<void> {
+    if ([...this.playerProfiles.values()].some((value) => value.discordId === profile.discordId)) {
+      return Promise.reject(new Error(`Discord profile ${profile.discordId} already exists`));
+    }
+    this.playerProfiles.set(profile.id, structuredClone(profile));
+    return Promise.resolve();
+  }
+  getPlayerProfile(profileId: PlayerProfileId): Promise<PlayerProfile | undefined> {
+    const profile = this.playerProfiles.get(profileId);
+    return Promise.resolve(profile === undefined ? undefined : structuredClone(profile));
+  }
+  getPlayerProfileByDiscordId(discordId: string): Promise<PlayerProfile | undefined> {
+    const profile = [...this.playerProfiles.values()].find((value) => value.discordId === discordId);
+    return Promise.resolve(profile === undefined ? undefined : structuredClone(profile));
+  }
+
+  listPlayerProfiles(): Promise<Array<PlayerProfile>> {
+    return Promise.resolve([...this.playerProfiles.values()].map((profile) => structuredClone(profile)));
+  }
+  savePlayerProfile(profile: PlayerProfile): Promise<void> {
+    if (!this.playerProfiles.has(profile.id)) {
+      return Promise.reject(new Error(`Player profile ${profile.id} not found`));
+    }
+    this.playerProfiles.set(profile.id, structuredClone(profile));
+    return Promise.resolve();
+  }
+  claimPlayer(claim: PlayerClaim): Promise<void> {
+    const existing = this.playerClaims.get(claim.participantId);
+    if (existing !== undefined && existing.profileId !== claim.profileId) {
+      return Promise.reject(new Error('This player has already been claimed by another profile'));
+    }
+    this.playerClaims.set(claim.participantId, structuredClone(claim));
+    return Promise.resolve();
+  }
+  getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
+    const claim = this.playerClaims.get(participantId);
+    return Promise.resolve(claim === undefined ? undefined : structuredClone(claim));
+  }
+  listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>> {
+    return Promise.resolve([...this.playerClaims.values()]
+      .filter((claim) => claim.profileId === profileId)
+      .map((claim) => structuredClone(claim)));
+  }
+  listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
+    return Promise.resolve(structuredClone(this.gameResults));
   }
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {
     if (this.legacyCampaigns.has(campaign.id)) {

@@ -6,6 +6,7 @@ import {GameId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
+import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
 
 // Operation names that get routed to `maintenanceLatency` instead of `operationLatency`. These are
 // batch/background jobs (purge, compress) that run on a much longer timescale than a typical
@@ -155,6 +156,42 @@ export class MetricsDelegate implements IDatabase {
 
   getSessions(): Promise<Array<Session>> {
     return withDatabaseMetrics('getSessions', () => this.delegate.getSessions());
+  }
+
+  createPlayerProfile(profile: PlayerProfile): Promise<void> {
+    return withDatabaseMetrics('createPlayerProfile', () => this.delegate.createPlayerProfile(profile));
+  }
+
+  getPlayerProfile(profileId: PlayerProfileId): Promise<PlayerProfile | undefined> {
+    return withDatabaseMetrics('getPlayerProfile', () => this.delegate.getPlayerProfile(profileId));
+  }
+
+  getPlayerProfileByDiscordId(discordId: string): Promise<PlayerProfile | undefined> {
+    return withDatabaseMetrics('getPlayerProfileByDiscordId', () => this.delegate.getPlayerProfileByDiscordId(discordId));
+  }
+
+  listPlayerProfiles(): Promise<Array<PlayerProfile>> {
+    return withDatabaseMetrics('listPlayerProfiles', () => this.delegate.listPlayerProfiles());
+  }
+
+  savePlayerProfile(profile: PlayerProfile): Promise<void> {
+    return withDatabaseMetrics('savePlayerProfile', () => this.delegate.savePlayerProfile(profile));
+  }
+
+  claimPlayer(claim: PlayerClaim): Promise<void> {
+    return withDatabaseMetrics('claimPlayer', () => this.delegate.claimPlayer(claim));
+  }
+
+  getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
+    return withDatabaseMetrics('getPlayerClaim', () => this.delegate.getPlayerClaim(participantId));
+  }
+
+  listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>> {
+    return withDatabaseMetrics('listPlayerClaims', () => this.delegate.listPlayerClaims(profileId));
+  }
+
+  listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
+    return withDatabaseMetrics('listCompletedGameResults', () => this.delegate.listCompletedGameResults());
   }
 
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

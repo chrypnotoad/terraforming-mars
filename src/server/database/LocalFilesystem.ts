@@ -1,12 +1,13 @@
 import {GameIdLedger, IDatabase} from './IDatabase';
 import {IGame, Score} from '../IGame';
 import {GameOptions} from '../game/GameOptions';
-import {GameId, isGameId, ParticipantId} from '../../common/Types';
+import {GameId, isGameId, isPlayerId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {Dirent, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync} from 'fs';
 import {Session, SessionId} from '../auth/Session';
 import {toID} from '../../common/utils/utils';
 import {isLegacyCampaignId, LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
+import {CompletedGameResult, isPlayerProfileId, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
 
 const path = require('path');
 const defaultDbFolder = path.resolve(process.cwd(), './db/files');
@@ -17,6 +18,8 @@ export class LocalFilesystem implements IDatabase {
   private readonly completedFolder: string;
   private readonly sessionsFolder: string;
   private readonly legacyCampaignsFolder: string;
+  private readonly playerProfilesFolder: string;
+  private readonly playerClaimsFolder: string;
   public static quiet: boolean = false;
 
   constructor(dbFolder: string = defaultDbFolder) {
@@ -25,11 +28,13 @@ export class LocalFilesystem implements IDatabase {
     this.completedFolder = path.resolve(dbFolder, 'completed');
     this.sessionsFolder = path.resolve(dbFolder, 'sessions');
     this.legacyCampaignsFolder = path.resolve(dbFolder, 'legacy-campaigns');
+    this.playerProfilesFolder = path.resolve(dbFolder, 'player-profiles');
+    this.playerClaimsFolder = path.resolve(dbFolder, 'player-claims');
   }
 
   public initialize(): Promise<void> {
     console.log(`Starting local database at ${this.dbFolder}`);
-    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder, this.legacyCampaignsFolder];
+    const dirs = [this.dbFolder, this.historyFolder, this.completedFolder, this.sessionsFolder, this.legacyCampaignsFolder, this.playerProfilesFolder, this.playerClaimsFolder];
     for (const folder of dirs) {
       if (!existsSync(folder)) {
         mkdirSync(folder);
@@ -60,6 +65,20 @@ export class LocalFilesystem implements IDatabase {
       throw new Error(`Invalid legacy campaign id ${campaignId}`);
     }
     return path.resolve(this.legacyCampaignsFolder, `${campaignId}.json`);
+  }
+
+  private playerProfileFilename(profileId: PlayerProfileId): string {
+    if (!isPlayerProfileId(profileId)) {
+      throw new Error(`Invalid player profile id ${profileId}`);
+    }
+    return path.resolve(this.playerProfilesFolder, `${profileId}.json`);
+  }
+
+  private playerClaimFilename(participantId: ParticipantId): string {
+    if (!isPlayerId(participantId)) {
+      throw new Error(`Invalid player id ${participantId}`);
+    }
+    return path.resolve(this.playerClaimsFolder, `${participantId}.json`);
   }
 
   saveGame(game: IGame): Promise<void> {
@@ -150,7 +169,7 @@ export class LocalFilesystem implements IDatabase {
   }
 
   saveGameResults(gameId: GameId, players: number, generations: number, gameOptions: GameOptions, scores: Array<Score>): void {
-    const obj = {gameId, players, generations, gameOptions, scores};
+    const obj = {gameId, players, generations, gameOptions, scores, completedAt: new Date().toISOString()};
     const text = JSON.stringify(obj, null, 2);
     writeFileSync(this.completedFilename(gameId), text);
   }
@@ -260,6 +279,103 @@ export class LocalFilesystem implements IDatabase {
       }
     }
     return Promise.resolve(sessions);
+  }
+
+  createPlayerProfile(profile: PlayerProfile): Promise<void> {
+    const filename = this.playerProfileFilename(profile.id);
+    if (existsSync(filename)) {
+      return Promise.reject(new Error(`Player profile ${profile.id} already exists`));
+    }
+    writeFileSync(filename, JSON.stringify(profile, null, 2));
+    return Promise.resolve();
+  }
+
+  getPlayerProfile(profileId: PlayerProfileId): Promise<PlayerProfile | undefined> {
+    const filename = this.playerProfileFilename(profileId);
+    if (!existsSync(filename)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(JSON.parse(readFileSync(filename).toString()) as PlayerProfile);
+  }
+
+  getPlayerProfileByDiscordId(discordId: string): Promise<PlayerProfile | undefined> {
+    for (const entry of readdirSync(this.playerProfilesFolder, {withFileTypes: true})) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
+        continue;
+      }
+      const profile = JSON.parse(readFileSync(path.resolve(this.playerProfilesFolder, entry.name)).toString()) as PlayerProfile;
+      if (profile.discordId === discordId) {
+        return Promise.resolve(profile);
+      }
+    }
+    return Promise.resolve(undefined);
+  }
+
+  listPlayerProfiles(): Promise<Array<PlayerProfile>> {
+    const profiles: Array<PlayerProfile> = [];
+    for (const entry of readdirSync(this.playerProfilesFolder, {withFileTypes: true})) {
+      if (entry.isFile() && entry.name.endsWith('.json')) {
+        profiles.push(JSON.parse(readFileSync(path.resolve(this.playerProfilesFolder, entry.name)).toString()) as PlayerProfile);
+      }
+    }
+    return Promise.resolve(profiles.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }
+
+  savePlayerProfile(profile: PlayerProfile): Promise<void> {
+    const filename = this.playerProfileFilename(profile.id);
+    if (!existsSync(filename)) {
+      return Promise.reject(new Error(`Player profile ${profile.id} not found`));
+    }
+    writeFileSync(filename, JSON.stringify(profile, null, 2));
+    return Promise.resolve();
+  }
+
+  async claimPlayer(claim: PlayerClaim): Promise<void> {
+    const existing = await this.getPlayerClaim(claim.participantId);
+    if (existing !== undefined && existing.profileId !== claim.profileId) {
+      throw new Error('This player has already been claimed by another profile');
+    }
+    writeFileSync(this.playerClaimFilename(claim.participantId), JSON.stringify(claim, null, 2));
+  }
+
+  getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined> {
+    const filename = this.playerClaimFilename(participantId);
+    if (!existsSync(filename)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(JSON.parse(readFileSync(filename).toString()) as PlayerClaim);
+  }
+
+  listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>> {
+    const claims: Array<PlayerClaim> = [];
+    for (const entry of readdirSync(this.playerClaimsFolder, {withFileTypes: true})) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
+        continue;
+      }
+      const claim = JSON.parse(readFileSync(path.resolve(this.playerClaimsFolder, entry.name)).toString()) as PlayerClaim;
+      if (claim.profileId === profileId) {
+        claims.push(claim);
+      }
+    }
+    return Promise.resolve(claims);
+  }
+
+  listCompletedGameResults(): Promise<Array<CompletedGameResult>> {
+    const results: Array<CompletedGameResult> = [];
+    for (const entry of readdirSync(this.completedFolder, {withFileTypes: true})) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
+        continue;
+      }
+      const row = JSON.parse(readFileSync(path.resolve(this.completedFolder, entry.name)).toString());
+      results.push({
+        gameId: row.gameId,
+        generations: row.generations,
+        completedAt: row.completedAt ?? '',
+        gameOptions: row.gameOptions,
+        scores: row.scores,
+      });
+    }
+    return Promise.resolve(results);
   }
 
   createLegacyCampaign(campaign: LegacyCampaign): Promise<void> {

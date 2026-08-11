@@ -17,6 +17,8 @@ import {Request} from '../Request';
 import {Response} from '../Response';
 import {QuotaConfig, QuotaHandler} from '../server/QuotaHandler';
 import {durationToMilliseconds} from '../utils/durations';
+import {isPlayerProfileId, PlayerProfileId} from '../../common/profile/PlayerProfile';
+import {IDatabase} from '../database/IDatabase';
 
 function parseQuotaConfig(struct: any): QuotaConfig {
   let {limit} = struct;
@@ -63,7 +65,7 @@ export class ApiCreateGame extends Handler {
   public static readonly INSTANCE = new ApiCreateGame();
   private quotaHandlers: Array<QuotaHandler>;
 
-  public constructor(quotaConfigs: Array<QuotaConfig> = getQuotaConfigs()) {
+  public constructor(quotaConfigs: Array<QuotaConfig> = getQuotaConfigs(), private database: IDatabase = Database.getInstance()) {
     super();
     this.quotaHandlers = quotaConfigs.map((config) => new QuotaHandler(config));
   }
@@ -102,6 +104,27 @@ export class ApiCreateGame extends Handler {
       req.once('end', async () => {
         try {
           const gameReq = JSON.parse(body) as NewGameConfig;
+          const profileIds = gameReq.players
+            .map((player) => player.profileId)
+            .filter((profileId): profileId is PlayerProfileId => profileId !== undefined);
+          if (profileIds.some((profileId) => !isPlayerProfileId(profileId)) || new Set(profileIds).size !== profileIds.length) {
+            responses.badRequest(req, res, 'Player profiles are invalid or duplicated');
+            resolve();
+            return;
+          }
+          if (profileIds.length > 0) {
+            if (ctx.user === undefined) {
+              responses.notAuthorized(req, res);
+              resolve();
+              return;
+            }
+            const profiles = await Promise.all(profileIds.map((profileId) => this.database.getPlayerProfile(profileId)));
+            if (profiles.some((profile) => profile === undefined)) {
+              responses.badRequest(req, res, 'Player profile not found');
+              resolve();
+              return;
+            }
+          }
           const gameId = safeCast(generateRandomId('g'), isGameId);
           const spectatorId = safeCast(generateRandomId('s'), isSpectatorId);
           const players = gameReq.players.map((p) => {
@@ -188,6 +211,18 @@ export class ApiCreateGame extends Handler {
             game = Game.newInstance(gameId, players, players[firstPlayerIdx], spectatorId, gameOptions, seed);
           }
           ctx.gameLoader.add(game);
+          const claimedAt = new Date(ctx.clock.now()).toISOString();
+          for (let index = 0; index < gameReq.players.length; index++) {
+            const profileId = gameReq.players[index].profileId;
+            if (profileId !== undefined) {
+              await this.database.claimPlayer({
+                participantId: players[index].id,
+                gameId,
+                profileId,
+                claimedAt,
+              });
+            }
+          }
           responses.writeJson(res, ctx, Server.getSimpleGameModel(game));
         } catch (error) {
           responses.internalServerError(req, res, error);
@@ -197,4 +232,3 @@ export class ApiCreateGame extends Handler {
     });
   }
 }
-

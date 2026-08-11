@@ -24,12 +24,12 @@ export type DiscordUser = {
 
 const URL_ROOT = process.env.URL_ROOT || DEFAULT_URL_ROOT;
 
-export async function getDiscordUser(code: string): Promise<DiscordUser> {
+export async function getDiscordUser(code: string, redirectUri: string = `${URL_ROOT}/auth/discord/callback`): Promise<DiscordUser> {
   const data = {
     client_id: process.env['DISCORD_CLIENT_ID'] || '',
     client_secret: process.env['DISCORD_CLIENT_SECRET'] || '',
     grant_type: 'authorization_code',
-    redirect_uri: `${URL_ROOT}/auth/discord/callback`,
+    redirect_uri: redirectUri,
     code: code,
     scope: 'identify',
   };

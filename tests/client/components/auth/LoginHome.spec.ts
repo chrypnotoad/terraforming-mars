@@ -34,10 +34,8 @@ describe('LoginHome', () => {
     expect((wrapper.vm as any).loginUrl).to.equal('');
   });
 
-  it('loginUrl is a well-formed Discord OAuth URL when discordClientId is set', () => {
+  it('loginUrl starts the server-side OAuth flow when discordClientId is set', () => {
     const wrapper = mount('test-client-id');
-    expect((wrapper.vm as any).loginUrl).to.equal(
-      'https://discord.com/oauth2/authorize?client_id=test-client-id&response_type=code&scope=identify&redirect_uri=/auth/discord/callback',
-    );
+    expect((wrapper.vm as any).loginUrl).to.equal('/auth/discord/start');
   });
 });

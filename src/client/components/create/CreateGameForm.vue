@@ -470,8 +470,39 @@
                                   <template v-for="(newPlayer, index) in getPlayers()" :key="index">
                                     <div>
                                       <div :class="'form-group col6 create-game-player '+getPlayerContainerColorClass(newPlayer.color)">
-                                          <div>
-                                              <input class="form-input form-inline create-game-player-name" :placeholder="getPlayerNamePlaceholder(index)" v-model="newPlayer.name" >
+                                          <div class="create-game-player-identity">
+                                              <img v-if="getSelectedProfile(newPlayer)?.avatarUrl" :src="getSelectedProfile(newPlayer)?.avatarUrl" alt="" class="create-game-player-avatar" :class="getProfileAvatarColorClass(getSelectedProfile(newPlayer))">
+                                              <div class="create-game-player-profile-field">
+                                                <input
+                                                  class="form-input form-inline create-game-player-name"
+                                                  :placeholder="getPlayerNamePlaceholder(index)"
+                                                  v-model="newPlayer.name"
+                                                  autocomplete="off"
+                                                  role="combobox"
+                                                  :aria-expanded="activeProfileIndex === index"
+                                                  @focus="openProfileSuggestions(index)"
+                                                  @blur="closeProfileSuggestions(index)">
+                                                <div v-if="activeProfileIndex === index && filteredProfiles(index).length > 0" class="create-game-profile-suggestions" role="listbox">
+                                                  <button
+                                                    v-for="profile in filteredProfiles(index)"
+                                                    :key="profile.id"
+                                                    type="button"
+                                                    class="create-game-profile-suggestion"
+                                                    role="option"
+                                                    @mousedown.prevent="selectProfile(index, profile)">
+                                                    <img v-if="profile.avatarUrl" :src="profile.avatarUrl" alt="" class="create-game-profile-suggestion-avatar" :class="getProfileAvatarColorClass(profile)">
+                                                    <span v-else class="create-game-profile-suggestion-avatar create-game-profile-initials" :class="getProfileAvatarColorClass(profile)">{{ profileInitials(profile) }}</span>
+                                                    <span class="create-game-profile-suggestion-name">
+                                                      <strong>{{ profile.displayName }}<template v-if="profile.isCurrentUser"> (You)</template></strong>
+                                                      <small>@{{ profile.discordUsername }}</small>
+                                                    </span>
+                                                  </button>
+                                                </div>
+                                                <div v-if="getSelectedProfile(newPlayer)" class="create-game-linked-profile">
+                                                  Linked to {{ getSelectedProfile(newPlayer)?.displayName }}
+                                                  <button type="button" title="Use this player name without a profile" @click="unlinkProfile(newPlayer)">×</button>
+                                                </div>
+                                              </div>
                                           </div>
                                           <div class="create-game-page-color-row">
                                               <template v-for="color in PLAYER_COLORS" :key="color">
@@ -620,6 +651,7 @@ import {getColony} from '@/client/colonies/ClientColonyManifest';
 import {RULEBOOK_URLS, WIKI, WIKI_URLS} from '@/client/utils/WikiLinks';
 import {setDocumentTitle} from '@/client/utils/documentTitle';
 import {LEGACY_EXPECTED_DELIVERY} from '@/common/legacy/LegacyCampaign';
+import {PlayerProfileSummary} from '@/common/profile/PlayerProfile';
 
 const REVISED_COUNT_ALGORITHM = false;
 const createGameSettingsStorage = new CreateGameSettingsStorage();
@@ -635,6 +667,8 @@ type FormModel = {
   preludeToggled: boolean;
   uploading: boolean;
   legacyExpectedDelivery: string;
+  profileDirectory: Array<PlayerProfileSummary>;
+  activeProfileIndex: number | undefined;
 };
 
 export default defineComponent({
@@ -645,6 +679,8 @@ export default defineComponent({
       preludeToggled: false,
       uploading: false,
       legacyExpectedDelivery: LEGACY_EXPECTED_DELIVERY,
+      profileDirectory: [],
+      activeProfileIndex: undefined,
     };
   },
   components: {
@@ -703,6 +739,7 @@ export default defineComponent({
   mounted() {
     setDocumentTitle('Create New Game');
     this.restoreLastSettings();
+    this.loadProfileDirectory();
   },
   computed: {
     wikiUrls(): typeof RULEBOOK_URLS & typeof WIKI_URLS {
@@ -742,6 +779,76 @@ export default defineComponent({
     },
   },
   methods: {
+    async loadProfileDirectory(): Promise<void> {
+      try {
+        const response = await fetch(`/${paths.API_PROFILES}`);
+        if (!response.ok) {
+          return;
+        }
+        this.profileDirectory = await response.json() as Array<PlayerProfileSummary>;
+      } catch (_error) {
+        // Profiles are optional; the manual player-name flow remains available.
+      }
+    },
+    getSelectedProfile(player: NewPlayerModel): PlayerProfileSummary | undefined {
+      return this.profileDirectory.find((profile) => profile.id === player.profileId);
+    },
+    filteredProfiles(index: number): Array<PlayerProfileSummary> {
+      const player = this.players[index];
+      const query = player.name.trim().toLocaleLowerCase();
+      const selectedElsewhere = new Set(this.getPlayers()
+        .filter((_candidate, candidateIndex) => candidateIndex !== index)
+        .map((candidate) => candidate.profileId)
+        .filter((profileId) => profileId !== undefined));
+      return this.profileDirectory
+        .filter((profile) => !selectedElsewhere.has(profile.id))
+        .filter((profile) => query.length === 0 ||
+          profile.displayName.toLocaleLowerCase().includes(query) ||
+          profile.discordUsername.toLocaleLowerCase().includes(query))
+        .sort((a, b) => Number(b.isCurrentUser) - Number(a.isCurrentUser) || a.displayName.localeCompare(b.displayName))
+        .slice(0, 8);
+    },
+    openProfileSuggestions(index: number): void {
+      this.activeProfileIndex = index;
+    },
+    closeProfileSuggestions(index: number): void {
+      window.setTimeout(() => {
+        if (this.activeProfileIndex === index) {
+          this.activeProfileIndex = undefined;
+        }
+      }, 100);
+    },
+    selectProfile(index: number, profile: PlayerProfileSummary): void {
+      const player = this.players[index];
+      player.profileId = profile.id;
+      player.name = profile.displayName;
+      if (profile.preferredColor !== undefined) {
+        player.color = profile.preferredColor;
+        this.resolvePlayerColorsInOrder();
+      }
+      this.activeProfileIndex = undefined;
+    },
+    unlinkProfile(player: NewPlayerModel): void {
+      delete player.profileId;
+    },
+    profileInitials(profile: PlayerProfileSummary): string {
+      return profile.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || '?';
+    },
+    getProfileAvatarColorClass(profile: PlayerProfileSummary | undefined): string {
+      return profile?.preferredColor === undefined ? 'create-game-profile-color-neutral' : `create-game-profile-color-${profile.preferredColor}`;
+    },
+    resolvePlayerColorsInOrder(): void {
+      const used = new Set<Color>();
+      for (const player of this.getPlayers()) {
+        if (used.has(player.color)) {
+          const replacement = PLAYER_COLORS.find((color) => !used.has(color));
+          if (replacement !== undefined) {
+            player.color = replacement;
+          }
+        }
+        used.add(player.color);
+      }
+    },
     restoreLastSettings() {
       const settings = createGameSettingsStorage.loadSettings();
       if (settings === undefined) {

@@ -9,6 +9,52 @@ import {RandomBoardOption} from '../../src/common/boards/RandomBoardOption';
 import {RandomMAOptionType} from '../../src/common/ma/RandomMAOptionType';
 import {SimpleGameModel} from '../../src/common/models/SimpleGameModel';
 import {FakeClock} from '../common/FakeClock';
+import {InMemoryDatabase} from '../testing/InMemoryDatabase';
+import {PLAYER_PROFILE_SCHEMA_VERSION} from '../../src/common/profile/PlayerProfile';
+
+function profileGameConfig(profileId: 'u1'): NewGameConfig {
+  return {
+    players: [{name: 'Rock', color: 'blue', beginner: false, handicap: 0, first: true, profileId}],
+    expansions: {corpera: true, promo: false, venus: false, colonies: false, prelude: false, prelude2: false, turmoil: false, community: false, ares: false, moon: false, pathfinders: false, ceo: false, starwars: false, underworld: false, deltaProject: false},
+    board: BoardName.THARSIS,
+    seed: 0,
+    randomFirstPlayer: false,
+    clonedGamedId: undefined,
+    undoOption: false,
+    showTimers: false,
+    fastModeOption: false,
+    showOtherPlayersVP: false,
+    aresExtremeVariant: false,
+    politicalAgendasExtension: 'Standard',
+    solarPhaseOption: false,
+    removeNegativeGlobalEventsOption: false,
+    modularMA: false,
+    draftVariant: false,
+    initialDraft: false,
+    preludeDraftVariant: false,
+    ceosDraftVariant: false,
+    startingCorporations: 0,
+    shuffleMapOption: false,
+    randomMA: RandomMAOptionType.NONE,
+    includeFanMA: false,
+    soloTR: false,
+    customCorporationsList: [],
+    bannedCards: [],
+    includedCards: [],
+    customColoniesList: [],
+    customPreludes: [],
+    requiresMoonTrackCompletion: false,
+    requiresVenusTrackCompletion: false,
+    moonStandardProjectVariant: false,
+    moonStandardProjectVariant1: false,
+    altVenusBoard: false,
+    escapeVelocity: undefined,
+    twoCorpsVariant: false,
+    customCeos: [],
+    startingCeos: 0,
+    startingPreludes: 0,
+  };
+}
 
 describe('ApiCreateGame', () => {
   let scaffolding: RouteTestScaffolding;
@@ -126,6 +172,33 @@ describe('ApiCreateGame', () => {
     const game = await scaffolding.ctx.gameLoader.getGame(model.id);
     expect(game).is.not.undefined;
     expect(game!.players[0].name).eq('Robot');
+  });
+
+  it('claims a created player for the selected profile', async () => {
+    const database = new InMemoryDatabase();
+    const timestamp = '2026-08-10T12:00:00.000Z';
+    await database.createPlayerProfile({
+      schemaVersion: PLAYER_PROFILE_SCHEMA_VERSION,
+      id: 'u1',
+      discordId: 'discord-1',
+      displayName: 'Rick',
+      discordUsername: 'rick',
+      aliases: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    scaffolding.ctx.user = {id: 'discord-host', username: 'host', discriminator: '0'};
+    const handler = new ApiCreateGame([{limit: 99999, perMs: 1}], database);
+    const post = scaffolding.post(handler, res);
+    const emit = Promise.resolve().then(() => {
+      req.emitter.emit('data', JSON.stringify(profileGameConfig('u1')));
+      req.emitter.emit('end');
+    });
+    await Promise.all([emit, post]);
+
+    expect(res.statusCode).eq(statusCode.ok);
+    const game = JSON.parse(res.content) as SimpleGameModel;
+    expect(await database.getPlayerClaim(game.players[0].id)).deep.include({gameId: game.id, profileId: 'u1'});
   });
 
   it('red rover solo game', async () => {

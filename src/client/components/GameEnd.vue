@@ -48,6 +48,11 @@
               </a>
             </div>
           </div>
+          <div v-if="playerView !== undefined" class="game_end_navigation">
+            <a :href="`/profile?claim=${encodeURIComponent(playerView.id)}`">
+              <span>Save this result to My Profile</span>
+            </a>
+          </div>
           <div v-if="!isSoloGame || game.isSoloModeWin" class="game-end-winer-announcement">
               <span v-for="p in winners" :key="p.color"><span :class="'log-player ' + getEndGamePlayerRowColorClass(p.color)">{{ p.name }}</span></span> <span v-i18n>won!</span>
           </div>

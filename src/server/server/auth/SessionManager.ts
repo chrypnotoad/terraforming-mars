@@ -14,7 +14,9 @@ export interface ISessionManager {
   sessionIds(): ReadonlyArray<SessionId>;
 }
 
-const DEFAULT_EXPIRATION_TIME = durationToMilliseconds(process.env.SESSION_DURATION || '30m');
+const configuredExpirationTime = durationToMilliseconds(process.env.SESSION_DURATION || '720H');
+export const SESSION_EXPIRATION_TIME_MS = Number.isFinite(configuredExpirationTime) && configuredExpirationTime > 0 ?
+  configuredExpirationTime : durationToMilliseconds('720H');
 
 export class SessionManager implements ISessionManager {
   private static instance: ISessionManager;
@@ -35,7 +37,7 @@ export class SessionManager implements ISessionManager {
   public constructor(
     clock: Clock = new Clock(),
     database: IDatabase = Database.getInstance(),
-    expirationTimeMillis = DEFAULT_EXPIRATION_TIME) {
+    expirationTimeMillis = SESSION_EXPIRATION_TIME_MS) {
     this.clock = clock;
     this.database = database;
     this.expirationTimeMillis = expirationTimeMillis;

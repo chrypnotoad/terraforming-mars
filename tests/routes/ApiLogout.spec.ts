@@ -28,7 +28,7 @@ describe('ApiLogout', () => {
     expect(res.statusCode).eq(statusCode.found);
     expect(res.content).eq('');
     expect(res.headers.get('Set-Cookie'))
-      .eq('sessionId=deleted; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+      .eq('sessionId=deleted; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
   });
 
   it('valid session id', async () => {
@@ -43,7 +43,7 @@ describe('ApiLogout', () => {
     expect(res.statusCode).eq(statusCode.found);
     expect(res.content).eq('');
     expect(res.headers.get('Set-Cookie'))
-      .eq('sessionId=deleted; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+      .eq('sessionId=deleted; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     expect(sessionManager.sessionIds()).is.empty;
   });
 });

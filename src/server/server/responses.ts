@@ -28,12 +28,23 @@ export function notFound(req: Request, res: Response, err?: string): void {
   res.end();
 }
 
-export function setCookie(res: Response, key: string, value: string, lifetimeSeconds: number) {
-  res.setHeader('Set-Cookie', `${key}=${value}; HttpOnly; Secure; SameSite=Strict; Max-Age=${lifetimeSeconds}; Path=/`);
+function appendCookie(res: Response, cookie: string): void {
+  const existing = res.getHeader('Set-Cookie');
+  if (existing === undefined) {
+    res.setHeader('Set-Cookie', cookie);
+  } else if (Array.isArray(existing)) {
+    res.setHeader('Set-Cookie', [...existing, cookie]);
+  } else {
+    res.setHeader('Set-Cookie', [String(existing), cookie]);
+  }
+}
+
+export function setCookie(res: Response, key: string, value: string, lifetimeSeconds: number, sameSite: 'Strict' | 'Lax' = 'Strict') {
+  appendCookie(res, `${key}=${value}; HttpOnly; Secure; SameSite=${sameSite}; Max-Age=${lifetimeSeconds}; Path=/`);
 }
 
 export function clearCookie(res: Response, key: string) {
-  res.setHeader('Set-Cookie', `${key}=deleted; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
+  appendCookie(res, `${key}=deleted; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
 }
 
 export function redirect(res: Response, destination: string) {
@@ -103,4 +114,3 @@ export function quotaExceeded(req: Request, res: Response) {
   res.write('Quota exceeded');
   res.end();
 }
-

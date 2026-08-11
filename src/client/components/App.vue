@@ -43,6 +43,7 @@
       <CardList v-else-if="screen === 'cards'"/>
       <AdminHome v-else-if="screen === 'admin'"/>
       <LoginHome v-else-if="screen === 'login-home'"/>
+      <ProfileHome v-else-if="screen === 'profile-home'"/>
       <Help v-else-if="screen === 'help'"/>
     </div>
     <div class="notice" v-i18n>
@@ -63,6 +64,7 @@ const GameHome = defineAsyncComponent(() => import(/* webpackChunkName: "game-ho
 const GamesOverview = defineAsyncComponent(() => import(/* webpackChunkName: "games-overview" */ '@/client/components/GamesOverview.vue'));
 const Help = defineAsyncComponent(() => import(/* webpackChunkName: "help" */ '@/client/components/help/Help.vue'));
 const LoginHome = defineAsyncComponent(() => import(/* webpackChunkName: "login" */ '@/client/components/auth/LoginHome.vue'));
+const ProfileHome = defineAsyncComponent(() => import(/* webpackChunkName: "profile" */ '@/client/components/profile/ProfileHome.vue'));
 const LoadGameForm = defineAsyncComponent(() => import(/* webpackChunkName: "load-game" */ '@/client/components/LoadGameForm.vue'));
 const LegacyCampaignHome = defineAsyncComponent(() => import(/* webpackChunkName: "legacy-campaigns" */ '@/client/components/legacy/LegacyCampaignHome.vue'));
 const PlayerHome = defineAsyncComponent(() => import(/* webpackChunkName: "player-home" */ '@/client/components/PlayerHome.vue'));
@@ -90,6 +92,7 @@ type Screen = 'admin' |
             'legacy-campaigns' |
             'login-home' |
             'player-home' |
+            'profile-home' |
             'spectator-home' |
             'start-screen' |
             'the-end';
@@ -158,6 +161,7 @@ export default defineComponent({
     Help,
     AdminHome,
     LoginHome,
+    ProfileHome,
   },
   methods: {
     showAlert(title: string, message: string, cb: () => void = () => {}): void {
@@ -307,6 +311,8 @@ export default defineComponent({
       app.screen = 'admin';
     } else if (currentPathname === paths.LOGIN) {
       app.screen = 'login-home';
+    } else if (currentPathname === paths.PROFILE) {
+      app.screen = 'profile-home';
     } else {
       app.screen = 'start-screen';
     }

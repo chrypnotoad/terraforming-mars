@@ -4,6 +4,7 @@ import {GameId, ParticipantId} from '../../common/Types';
 import {SerializedGame} from '../SerializedGame';
 import {Session, SessionId} from '../auth/Session';
 import {LegacyCampaign, LegacyCampaignId} from '../../common/legacy/LegacyCampaign';
+import {CompletedGameResult, PlayerClaim, PlayerProfile, PlayerProfileId} from '../../common/profile/PlayerProfile';
 
 export type GameIdLedger = {gameId: GameId, participantIds: Array<ParticipantId>}
 
@@ -109,9 +110,7 @@ export interface IDatabase {
      * A maintenance task that purges abandoned solo games older
      * than a given date range.
      *
-     * Behavior when the environment variable is absent is system-dependent:
-     * * In PostgreSQL, it uses a default of 10 days
-     * * In Sqlite, it doesn't purge
+     * * When MAX_GAME_DAYS is absent, supported databases do not purge games.
      * * This whole method is ignored in LocalFilesystem.
      *
      * Returns a list of purged Game IDs.
@@ -136,6 +135,16 @@ export interface IDatabase {
     createSession(session: Session): Promise<void>;
     deleteSession(sessionId: SessionId): Promise<void>;
     getSessions(): Promise<Array<Session>>;
+
+    createPlayerProfile(profile: PlayerProfile): Promise<void>;
+    getPlayerProfile(profileId: PlayerProfileId): Promise<PlayerProfile | undefined>;
+    getPlayerProfileByDiscordId(discordId: string): Promise<PlayerProfile | undefined>;
+    listPlayerProfiles(): Promise<Array<PlayerProfile>>;
+    savePlayerProfile(profile: PlayerProfile): Promise<void>;
+    claimPlayer(claim: PlayerClaim): Promise<void>;
+    getPlayerClaim(participantId: ParticipantId): Promise<PlayerClaim | undefined>;
+    listPlayerClaims(profileId: PlayerProfileId): Promise<Array<PlayerClaim>>;
+    listCompletedGameResults(): Promise<Array<CompletedGameResult>>;
 
     createLegacyCampaign(campaign: LegacyCampaign): Promise<void>;
     getLegacyCampaign(campaignId: LegacyCampaignId): Promise<LegacyCampaign | undefined>;

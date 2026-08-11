@@ -57,15 +57,10 @@ export default defineComponent({
   },
   computed: {
     loginUrl(): string {
-      const thisUrl = window.location.href;
-      const idx = window.location.href.lastIndexOf('/' + paths.LOGIN);
-      const url = thisUrl.substring(0, idx) + '/' + paths.AUTH_DISCORD_CALLBACK;
-      const encoded = encodeURI(url);
-      const clientId = this.discordClientId;
-      if (!clientId) {
+      if (!this.discordClientId) {
         return '';
       }
-      return 'https://discord.com/oauth2/authorize?client_id=' + clientId + '&response_type=code&scope=identify&redirect_uri=' + encoded;
+      return '/' + paths.AUTH_DISCORD_START;
     },
     logoutURL(): string {
       return paths.API_LOGOUT;

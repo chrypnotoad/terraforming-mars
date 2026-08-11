@@ -18,11 +18,14 @@ import {ApiLogout} from '../routes/ApiLogout';
 import {ApiMetrics} from '../routes/ApiMetrics';
 import {ApiPlayer} from '../routes/ApiPlayer';
 import {ApiProfile} from '../routes/ApiProfile';
+import {ApiProfileClaim} from '../routes/ApiProfileClaim';
+import {ApiProfiles} from '../routes/ApiProfiles';
 import {ApiSpectator} from '../routes/ApiSpectator';
 import {ApiStats} from '../routes/ApiStats';
 import {ApiWaitingFor} from '../routes/ApiWaitingFor';
 import {Autopass} from '../routes/Autopass';
 import {DiscordAuth} from '../routes/DiscordAuth';
+import {DiscordAuthStart} from '../routes/DiscordAuthStart';
 import {GameHandler} from '../routes/Game';
 import {GamesOverview} from '../routes/GamesOverview';
 import {Context, IHandler} from '../routes/IHandler';
@@ -100,6 +103,9 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.API_LEGACY_CAMPAIGNS, ApiLegacyCampaigns.INSTANCE],
     [paths.API_METRICS, ApiMetrics.INSTANCE],
     [paths.API_PLAYER, ApiPlayer.INSTANCE],
+    [paths.API_PROFILE, ApiProfile.INSTANCE],
+    [paths.API_PROFILE_CLAIM, ApiProfileClaim.INSTANCE],
+    [paths.API_PROFILES, ApiProfiles.INSTANCE],
     [paths.API_STATS, ApiStats.INSTANCE],
     [paths.API_SPECTATOR, ApiSpectator.INSTANCE],
     [paths.API_WAITING_FOR, ApiWaitingFor.INSTANCE],
@@ -119,10 +125,11 @@ const handlers: Map<string, IHandler> = new Map(
     ['vendors.js', ServeAsset.INSTANCE],
     ['vendors.js.map', ServeAsset.INSTANCE],
     [paths.AUTH_DISCORD_CALLBACK, DiscordAuth.INSTANCE],
+    [paths.AUTH_DISCORD_START, DiscordAuthStart.INSTANCE],
     [paths.NEW_GAME, ServeApp.INSTANCE],
     [paths.PLAYER, ServeApp.INSTANCE],
     [paths.PLAYER_INPUT, PlayerInput.INSTANCE],
-    [paths.API_PROFILE, ApiProfile.INSTANCE],
+    [paths.PROFILE, ServeApp.INSTANCE],
     [paths.RESET, Reset.INSTANCE],
     [paths.SPECTATOR, ServeApp.INSTANCE],
     ['styles.css', ServeAsset.INSTANCE],

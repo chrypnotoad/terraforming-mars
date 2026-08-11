@@ -14,6 +14,16 @@ function getLocalStorage(): Storage | undefined {
 function settingsWithoutClonedGameId(settings: JSONObject): JSONObject {
   const sanitized = {...settings};
   delete sanitized.clonedGamedId;
+  if (Array.isArray(sanitized.players)) {
+    sanitized.players = sanitized.players.map((player) => {
+      if (typeof player !== 'object' || player === null || Array.isArray(player)) {
+        return player;
+      }
+      const sanitizedPlayer = {...player};
+      delete sanitizedPlayer.profileId;
+      return sanitizedPlayer;
+    });
+  }
   return sanitized;
 }
 

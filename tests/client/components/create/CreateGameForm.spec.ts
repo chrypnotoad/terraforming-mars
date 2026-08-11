@@ -9,6 +9,7 @@ import {DEFAULT_EXPANSIONS} from '@/common/cards/GameModule';
 import {JSONObject} from '@/common/Types';
 import {defineComponent} from 'vue';
 import {LEGACY_EXPECTED_DELIVERY} from '@/common/legacy/LegacyCampaign';
+import {PlayerProfileSummary} from '@/common/profile/PlayerProfile';
 
 // Minimal serialized Create Game payload used by settings restore tests.
 function createGameSettings(overrides: JSONObject = {}): JSONObject {
@@ -154,5 +155,39 @@ describe('CreateGameForm', () => {
       global.fetch = originalFetch;
       global.alert = originalAlert;
     }
+  });
+
+  it('selects profiles without automatically adding the signed-in creator', async () => {
+    const wrapper = shallowMount(CreateGameForm, {
+      ...globalConfig,
+    });
+    const profiles: Array<PlayerProfileSummary> = [
+      {id: 'u2', displayName: 'Beth', discordUsername: 'beth', preferredColor: 'green', isCurrentUser: false},
+      {id: 'u1', displayName: 'Rick', discordUsername: 'rick', avatarUrl: 'data:image/png;base64,avatar', preferredColor: 'red', isCurrentUser: true},
+    ];
+    (wrapper.vm as any).profileDirectory = profiles;
+    (wrapper.vm as any).playersCount = 2;
+
+    expect((wrapper.vm as any).players[0].profileId).eq(undefined);
+    expect((wrapper.vm as any).filteredProfiles(0)[0].id).eq('u1');
+
+    (wrapper.vm as any).selectProfile(1, profiles[1]);
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).players[1]).deep.include({name: 'Rick', profileId: 'u1', color: 'green'});
+    expect(wrapper.find('.create-game-player-avatar').attributes('src')).eq(profiles[1].avatarUrl);
+    expect(wrapper.find('.create-game-player-avatar').classes()).includes('create-game-profile-color-red');
+    expect(wrapper.text()).not.contains('prefers red');
+  });
+
+  it('keeps a linked profile when its game nickname changes', () => {
+    const wrapper = shallowMount(CreateGameForm, {
+      ...globalConfig,
+    });
+    const profile: PlayerProfileSummary = {id: 'u1', displayName: 'Rick', discordUsername: 'rick', isCurrentUser: true};
+    (wrapper.vm as any).profileDirectory = [profile];
+    (wrapper.vm as any).selectProfile(0, profile);
+    (wrapper.vm as any).players[0].name = 'Rock';
+    expect((wrapper.vm as any).players[0].profileId).eq('u1');
   });
 });
