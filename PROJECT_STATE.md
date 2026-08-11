@@ -179,9 +179,10 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
   player avatar. Focused client tests and client/CSS lint passed; production
   client/CSS builds were redeployed and the four affected Cloudflare cache
   entries were purged successfully.
-- Live Discord posting is waiting for the bot token plus test guild/channel IDs
-  to be added to the ignored `.env` and for the bot to be installed in that
-  test server.
+- The Discord bot is installed in the `OpenClawErebusM4` test server and is
+  configured privately for `#general`. A live invitation for game
+  `g8e2f323bdf8b` posted successfully on 2026-08-10, validating the production
+  bot token, configured destination, rich embed, and Open Game link.
 
 ## Current blockers
 
@@ -199,8 +200,10 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
    guest names, and spectator-host creation on the deployed New Game page.
 2. Create the next real game using selected profiles and confirm its completed
    results appear in My Profile.
-3. Configure/install the minimal Discord bot in the test server, restart the
-   app, and verify one real invitation plus duplicate/error feedback.
+3. Verify the visible `Post game to Discord` button once from a signed-in game
+   page; direct production-client posting and automated browser-path coverage
+   have passed, but browser automation had no active browser session for the
+   final authenticated click.
 4. Decide how account-level Discord unlink should work before adding it:
    Discord is currently the only login/recovery method. Per-game unlinking is
    already safe and implemented.

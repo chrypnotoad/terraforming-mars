@@ -14,17 +14,16 @@ update the status as work moves between devices or Codex tasks.
 
 ## Next
 
-- [ ] **Post game invitations to Discord from the game page (implementation
-  complete; live bot installation/QA remains).** Preserve the
+- [x] **Post game invitations to Discord from the game page.** Preserve the
   current flow and shared `/game?id=...` URL: after creating a game, the host
   can click `Post to Discord` instead of copying and pasting the URL manually.
   Keep `Copy game link` available for account-free play and as a fallback.
-  - Use the existing Discord application as a guild-installed bot; a server
+  - [x] Use the existing Discord application as a guild-installed bot; a server
     administrator performs the one-time installation.
-  - Request only `View Channel`, `Send Messages`, and `Embed Links` in one
+  - [x] Request only `View Channel`, `Send Messages`, and `Embed Links` in one
     designated game channel. No message-reading, member-list, moderation,
     presence, or privileged gateway permissions.
-  - Store the bot token as a server secret and configure one guild/channel ID
+  - [x] Store the bot token as a server secret and configure one guild/channel ID
     initially; channel-selection UI and multi-server support are out of scope.
   - [x] Add an authenticated, same-origin, rate-limited server endpoint that
     validates the game exists before the bot posts. Require a linked Discord
