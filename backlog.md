@@ -30,10 +30,11 @@ update the status as work moves between devices or Codex tasks.
     validates the game exists before the bot posts. Require a linked Discord
     profile to use the button; invited players still need no account.
   - [x] Post a generated 1200×630 Mars broadcast card containing the creator,
-    players, avatar/color rings, corporations, board, expansions, global
-    parameters, generation/status, and an `Open Game` link. At game end, turn
-    the same card into final results with ranks and scores. Do not add a new
-    lobby, join token, or seat-claim flow.
+    a readable tableau of the actual corporation-card data in play, player
+    colors, board, expansions, global parameters, generation/status, and an
+    `Open Game` link. Keep detailed game state in native Discord embed text. At
+    game end, add ranks and scores. Do not add a new lobby, join token, or
+    seat-claim flow.
   - [x] Persist the Discord message ID per game and update that one message as
     visible game state changes. Coalesce saves, skip unchanged snapshots,
     throttle Discord writes, and retain retry/error state without risking game

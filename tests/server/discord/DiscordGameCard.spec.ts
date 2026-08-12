@@ -2,6 +2,8 @@ import {expect} from 'chai';
 import {Phase} from '../../../src/common/Phase';
 import {buildDiscordGameCardSnapshot, DiscordGameCardRenderer, discordGameCardSnapshotHash} from '../../../src/server/discord/DiscordGameCard';
 import {discordGameMessagePayload} from '../../../src/server/discord/DiscordInviteClient';
+import {Helion} from '../../../src/server/cards/corporation/Helion';
+import {TharsisRepublic} from '../../../src/server/cards/corporation/TharsisRepublic';
 import {testGame} from '../../TestGame';
 import {InMemoryDatabase} from '../../testing/InMemoryDatabase';
 
@@ -14,6 +16,12 @@ describe('DiscordGameCard', () => {
     expect(lobby.status).eq('lobby');
     expect(lobby.players.map((player) => player.name)).deep.eq(['player1', 'player2']);
     expect(lobby.players.every((player) => player.score === undefined)).eq(true);
+
+    game.players[0]?.playedCards.push(new Helion());
+    game.players[1]?.playedCards.push(new TharsisRepublic());
+    const active = await buildDiscordGameCardSnapshot(game, database, 'Chris');
+    expect(active.status).eq('active');
+    expect(active.players[0]?.corporationCards?.[0]).deep.include({name: 'Helion', startingMegaCredits: 42, cardNumber: 'R18'});
 
     game.phase = Phase.END;
     const complete = await buildDiscordGameCardSnapshot(game, database, 'Chris');
@@ -36,9 +44,9 @@ describe('DiscordGameCard', () => {
       oceans: 5,
       postedBy: 'chrypnotoad',
       players: [
-        {name: 'Rock', color: 'green', corporation: 'Helion'},
-        {name: 'Chrus', color: 'purple', corporation: 'Tharsis Republic'},
-        {name: 'The Martian Formerly Known as Dan', color: 'orange', corporation: 'Credicor'},
+        {name: 'Rock', color: 'green', corporation: 'Helion', corporationCards: [{name: 'Helion', startingMegaCredits: 42, tags: ['space'], cardNumber: 'R18', description: 'You start with 3 heat production and 42 M€. You may use heat as M€.'}]},
+        {name: 'Chrus', color: 'purple', corporation: 'Tharsis Republic', corporationCards: [{name: 'Tharsis Republic', startingMegaCredits: 40, tags: ['building'], cardNumber: 'R31', description: 'You start with 40 M€. Place a city tile. When any city tile is placed on Mars, increase your M€ production.'}]},
+        {name: 'The Martian Formerly Known as Dan', color: 'orange', corporation: 'Credicor', corporationCards: [{name: 'Credicor', startingMegaCredits: 57, tags: ['earth'], cardNumber: 'R04', description: 'You start with 57 M€. After you pay for a card or standard project with a basic cost of 20 M€ or more, gain 4 M€.'}]},
       ],
     });
 

@@ -202,6 +202,16 @@ JavaScript and CSS were verified to contain the new subtitle text and layout.
   player/corporation roster and moved board, expansions, generation,
   temperature, oxygen, and ocean counts into native Discord embed fields so
   the details remain readable at any client scale.
+- Replaced that roster with a corporation-card tableau once corporations are
+  selected. Each code-rendered card uses the corporation's real name, starting
+  M€, tags, rules description, card number, owning player's name/color, and
+  final rank/score when applicable. Normal games fit up to five cards across;
+  a compact two-row fallback covers Merger and nonstandard high-player games.
+  Before corporation selection, the prior avatar roster remains as the lobby
+  fallback. Renderer versioning upgrades already-posted games automatically.
+  Deployed and live-validated the tableau on 2026-08-12 using the existing
+  two-player Teractor/Inventrix game; Discord retained the same message ID and
+  native game-stat fields while replacing its image attachment in place.
 
 ## Current blockers
 
